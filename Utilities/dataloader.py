@@ -28,6 +28,11 @@ class EEGDataLoader(Dataset):
 
         signal = data["impulse_signal"]
         label = data["impulse_name"]
+        sample_rate = data["sample_rate"]
+
+        # shorten slice to even timing (4 second sample)
+        end = sample_rate * 4
+        signal = signal[:, :end]
 
         if self.transform:
             signal = self.transform(signal)

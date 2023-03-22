@@ -37,8 +37,9 @@ def split_file(filename):
 
                 all_slices.append({
                     "impulse_name": impulses_names[type_of_slice],
+                    "impulse_index": type_of_slice,
                     "impulse_signal": current_slice,
-                    "duration_s": (i - slice_start_index) / FileConverter.DATASET_FREQ
+                    "sample_rate": FileConverter.DATASET_FREQ,
                 })
 
                 slicing = False
