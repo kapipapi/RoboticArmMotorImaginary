@@ -43,4 +43,4 @@ class FileConverter:
         raw_data = raw_data.astype('float32')
         raw_data -= 0.55 * (raw_data[6, :] + raw_data[8, :])  # referencing the signal
 
-        return raw_data, markers
+        return np.array(raw_data), markers

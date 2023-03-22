@@ -11,13 +11,13 @@ def load_paths(root_dir):
             if file.endswith(".npy"):
                 paths.append(os.path.join(root, file))
 
-    print(len(paths))
     return paths
 
 
 class EEGDataLoader(Dataset):
 
-    def __init__(self, root_dir):
+    def __init__(self, root_dir, transform=None):
+        self.transform = transform
         self.paths = load_paths(root_dir)
 
     def __len__(self):
@@ -28,5 +28,8 @@ class EEGDataLoader(Dataset):
 
         signal = data["impulse_signal"]
         label = data["impulse_name"]
+
+        if self.transform:
+            signal = self.transform(signal)
 
         return signal, label

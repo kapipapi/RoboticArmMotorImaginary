@@ -10,23 +10,10 @@ from Utilities.converter import FileConverter
 impulses_names = ["BREAK", "LEFT", "RIGHT", "RELAX"]
 
 
-def minmax(s):
-    return (s - np.min(s)) / (np.max(s) - np.min(s))
-
-
 def split_file(filename):
     signals, markers = FileConverter().preconvert_file(filename)
 
-    freq = FileConverter.DATASET_FREQ
-
-    signals_mean = []
-    for s in signals:
-        s = minmax(s)
-        signals_mean.append(s)
-    signal_samples = np.array(signals_mean)
-
     all_slices = []
-
     type_of_slice = None
     slicing = False
     slice_start_index = None
@@ -46,12 +33,12 @@ def split_file(filename):
 
         else:
             if m == 1:
-                current_slice = signal_samples[:, slice_start_index:i]
+                current_slice = signals[:, slice_start_index:i]
 
                 all_slices.append({
                     "impulse_name": impulses_names[type_of_slice],
                     "impulse_signal": current_slice,
-                    "duration_s": (i - slice_start_index) / freq
+                    "duration_s": (i - slice_start_index) / FileConverter.DATASET_FREQ
                 })
 
                 slicing = False
