@@ -4,7 +4,6 @@
 import os
 
 import numpy as np
-from tqdm.notebook import trange
 
 from Utilities.converter import FileConverter
 
@@ -31,7 +30,10 @@ def split_file(filename):
     type_of_slice = None
     slicing = False
     slice_start_index = None
-    for i in trange(len(markers), desc="markers"):
+    for i in range(len(markers)):
+        if i % 1000 == 0:
+            print(i + 1, "/", len(markers), " " * 100, end="\r")
+
         m = markers[i]
 
         if not slicing:
