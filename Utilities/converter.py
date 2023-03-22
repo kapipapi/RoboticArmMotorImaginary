@@ -1,5 +1,7 @@
 import os
+
 import numpy as np
+from tqdm.notebook import trange
 
 
 class FileConverter:
@@ -22,7 +24,7 @@ class FileConverter:
 
         triggers = np.ndarray((1, self.DATASET_FREQ * channel_sections_count, 3), dtype='<u1')
 
-        for sec in range(channel_sections_count):
+        for sec in trange(channel_sections_count, desc="sections"):
             for ch in range(self.CHANNELS_IN_FILE):
                 for sam in range(self.DATASET_FREQ):
                     beg = sec * self.CHANNELS_IN_FILE * self.DATASET_FREQ * 3 + ch * self.DATASET_FREQ * 3 + sam * 3
