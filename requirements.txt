@@ -1,4 +1,8 @@
-matplotlib
-numpy
-torch
 jupyterlab
+numpy
+matplotlib
+torch
+torchvision
+torchsummary
+torchmetrics
+lightning

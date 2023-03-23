@@ -14,7 +14,7 @@ def load_paths(root_dir):
     return paths
 
 
-class EEGDataLoader(Dataset):
+class EEGDataset(Dataset):
 
     def __init__(self, root_dir, transform=None):
         self.transform = transform
@@ -27,7 +27,7 @@ class EEGDataLoader(Dataset):
         data = np.load(self.paths[index], allow_pickle=True).item()
 
         signal = data["impulse_signal"]
-        label = data["impulse_name"]
+        label = data["impulse_index"]
         sample_rate = data["sample_rate"]
 
         # shorten slice to even timing (4 second sample)
@@ -37,4 +37,4 @@ class EEGDataLoader(Dataset):
         if self.transform:
             signal = self.transform(signal)
 
-        return signal, label
+        return np.array(signal), label
