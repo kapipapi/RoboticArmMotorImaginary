@@ -6,3 +6,4 @@ torchvision
 torchsummary
 torchmetrics
 lightning
+sklearn
