@@ -83,10 +83,14 @@ def main():
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True)
     test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size, shuffle=True)
 
-    for epoch in range(1, epochs + 1):
-        train(args, model, device, train_loader, optimizer, criterion, epoch)
-        evaluate(model, device, criterion, test_loader)
-        scheduler.step()
+    try:
+        for epoch in range(1, epochs + 1):
+            train(args, model, device, train_loader, optimizer, criterion, epoch)
+            evaluate(model, device, criterion, test_loader)
+            scheduler.step()
+    except KeyboardInterrupt:
+        print('-' * 89)
+        print('Exiting from training early')
 
     if args.save_model:
         torch.save(model.state_dict(), f"{args.model}.pt")
