@@ -1,7 +1,7 @@
-/.ipynb_checkpoints/
-/venv/
-/dataset/
-/.idea/
-/__pycache__/
+.ipynb_checkpoints
+venv
+dataset
+.idea
+__pycache__
 *.pyc
-/lightning_logs/
+lightning_logs
