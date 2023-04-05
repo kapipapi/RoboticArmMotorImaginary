@@ -2,11 +2,11 @@
 # Based on Jupyter: plot_data.ipynb
 
 import os
-import math
-import torch
-import numpy as np
+
 import matplotlib.pyplot as plt
-from scipy.signal import butter, buttord, lfilter, decimate, resample
+import numpy as np
+import torch
+from scipy.signal import butter, buttord, lfilter, resample
 
 from Utilities.converter import FileConverter
 
@@ -62,6 +62,12 @@ def split_file(filename):
         np.save(data_filename, impulse)
 
 
+if __name__ == '__main__':
+    for i in range(1, 5):
+        split_file(f"../dataset/sesja{i}_pawel_zaciskanie_dloni.bdf")
+        print(f"Finished converting file number {i}")
+
+
 class EEGDataProcessor():
     DATASET_FREQ = 2048
     DOWNSAMPLED_FREQ = 256
@@ -77,10 +83,12 @@ class EEGDataProcessor():
     MIN_ATT_SB = 6
 
     def __init__(self):
-        f_ord, wn = buttord(self.LOW_PASS_FREQ_PB, self.LOW_PASS_FREQ_SB, self.MAX_LOSS_PB, self.MIN_ATT_SB, False, self.DATASET_FREQ)
+        f_ord, wn = buttord(self.LOW_PASS_FREQ_PB, self.LOW_PASS_FREQ_SB, self.MAX_LOSS_PB, self.MIN_ATT_SB, False,
+                            self.DATASET_FREQ)
         self.low_b, self.low_a = butter(f_ord, wn, 'lowpass', False, 'ba', self.DATASET_FREQ)
 
-        f_ord, wn = buttord(self.HIGH_PASS_FREQ_PB, self.HIGH_PASS_FREQ_SB, self.MAX_LOSS_PB, self.MIN_ATT_SB, False, self.DATASET_FREQ)
+        f_ord, wn = buttord(self.HIGH_PASS_FREQ_PB, self.HIGH_PASS_FREQ_SB, self.MAX_LOSS_PB, self.MIN_ATT_SB, False,
+                            self.DATASET_FREQ)
         self.high_b, self.high_a = butter(f_ord, wn, 'highpass', False, 'ba', self.DATASET_FREQ)
 
     def filter(self, buffer):
@@ -110,7 +118,13 @@ class EEGDataProcessor():
 
     def visualize_sample_freq(self, buffer):
         N = len(buffer)
-        T = 1/self.DATASET_FREQ
+        T = 1 / self.DATASET_FREQ
         yf = torch.fft.fft(buffer)
-        xf = np.linspace(0.0, 1.0/(2.0*T), N//2)
-        plt.plot(xf, 2.0/N * np.abs(yf[:N//2]))
+        xf = np.linspace(0.0, 1.0 / (2.0 * T), N // 2)
+        plt.plot(xf, 2.0 / N * np.abs(yf[:N // 2]))
+
+    def natural_logarithm(self, buffer):
+        return np.log(buffer)
+
+    def amplitude_conversion(self, buffer):
+        return buffer * 0.03125
