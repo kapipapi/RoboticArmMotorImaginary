@@ -1,5 +1,5 @@
 import os
-
+import torch
 import numpy as np
 from torch.utils.data import Dataset
 
@@ -12,6 +12,16 @@ def load_paths(root_dir):
                 paths.append(os.path.join(root, file))
 
     return paths
+
+
+class Compose:
+    def __init__(self, transforms):
+        self.transforms = transforms
+
+    def __call__(self, x):
+        for t in self.transforms:
+            x = t(x)
+        return x
 
 
 class EEGDataset(Dataset):
