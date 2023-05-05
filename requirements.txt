@@ -7,3 +7,8 @@ torchsummary
 torchmetrics
 lightning
 sklearn
+scipy
+tensorboard
+ipywidgets
+seaborn
+einops
