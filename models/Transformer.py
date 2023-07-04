@@ -1,0 +1,343 @@
+import math
+import torch
+import torchmetrics
+import torch.nn.functional as F
+import pytorch_lightning as pl
+
+from torch import nn
+from torch import Tensor
+from torch.optim import Adam
+
+from einops import rearrange, repeat
+from einops.layers.torch import Rearrange, Reduce
+
+
+class PatchEmbedding(pl.LightningModule):
+    def __init__(self, emb_size):
+        # self.patch_size = patch_size
+        super().__init__()
+        self.projection = nn.Sequential(
+            nn.Conv2d(1, 2, (1, 51), (1, 1)),
+            nn.BatchNorm2d(2),
+            nn.LeakyReLU(0.2),
+            nn.Conv2d(2, emb_size, (16, 5), stride=(1, 5)),
+            Rearrange('b e (h) (w) -> b (h w) e'),
+        )
+        self.cls_token = nn.Parameter(torch.randn(1, 1, emb_size))
+        # self.positions = nn.Parameter(torch.randn((100 + 1, emb_size)))
+        # self.positions = nn.Parameter(torch.randn((2200 + 1, emb_size)))
+
+    def forward(self, x: Tensor) -> Tensor:
+        b, _, _, _ = x.shape
+        x = self.projection(x)
+        cls_tokens = repeat(self.cls_token, '() n e -> b n e', b=b)
+
+        # position
+        # x += self.positions
+        return x
+
+
+class MultiHeadAttention(pl.LightningModule):
+    def __init__(self, emb_size, num_heads, dropout):
+        super().__init__()
+        self.emb_size = emb_size
+        self.num_heads = num_heads
+        self.keys = nn.Linear(emb_size, emb_size)
+        self.queries = nn.Linear(emb_size, emb_size)
+        self.values = nn.Linear(emb_size, emb_size)
+        self.att_drop = nn.Dropout(dropout)
+        self.projection = nn.Linear(emb_size, emb_size)
+
+    def forward(self, x: Tensor, mask: Tensor = None) -> Tensor:
+        queries = rearrange(self.queries(x), "b n (h d) -> b h n d", h=self.num_heads)
+        keys = rearrange(self.keys(x), "b n (h d) -> b h n d", h=self.num_heads)
+        values = rearrange(self.values(x), "b n (h d) -> b h n d", h=self.num_heads)
+        energy = torch.einsum('bhqd, bhkd -> bhqk', queries, keys)  # batch, num_heads, query_len, key_len
+        if mask is not None:
+            fill_value = torch.finfo(torch.float32).min
+            energy.mask_fill(~mask, fill_value)
+
+        scaling = self.emb_size ** (1 / 2)
+        att = F.softmax(energy / scaling, dim=-1)
+        att = self.att_drop(att)
+        out = torch.einsum('bhal, bhlv -> bhav ', att, values)
+        out = rearrange(out, "b h n d -> b n (h d)")
+        out = self.projection(out)
+        return out
+
+
+class ResidualAdd(pl.LightningModule):
+    def __init__(self, fn):
+        super().__init__()
+        self.fn = fn
+
+    def forward(self, x, **kwargs):
+        res = x
+        x = self.fn(x, **kwargs)
+        x += res
+        return x
+
+
+class FeedForwardBlock(nn.Sequential):
+    def __init__(self, emb_size, expansion, drop_p):
+        super().__init__(
+            nn.Linear(emb_size, expansion * emb_size),
+            nn.GELU(),
+            nn.Dropout(drop_p),
+            nn.Linear(expansion * emb_size, emb_size),
+        )
+
+
+class GELU(pl.LightningModule):
+    def forward(self, input: Tensor) -> Tensor:
+        return input * 0.5 * (1.0 + torch.erf(input / math.sqrt(2.0)))
+
+
+class TransformerEncoderBlock(nn.Sequential):
+    def __init__(self,
+                 emb_size,
+                 num_heads=5,
+                 drop_p=0.5,
+                 forward_expansion=4,
+                 forward_drop_p=0.5):
+        super().__init__(
+            ResidualAdd(nn.Sequential(
+                nn.LayerNorm(emb_size),
+                MultiHeadAttention(emb_size, num_heads, drop_p),
+                nn.Dropout(drop_p)
+            )),
+            ResidualAdd(nn.Sequential(
+                nn.LayerNorm(emb_size),
+                FeedForwardBlock(
+                    emb_size, expansion=forward_expansion, drop_p=forward_drop_p),
+                nn.Dropout(drop_p)
+            )
+            ))
+
+
+class TransformerEncoder(nn.Sequential):
+    def __init__(self, depth, emb_size):
+        super().__init__(*[TransformerEncoderBlock(emb_size) for _ in range(depth)])
+
+
+class ClassificationHead(nn.Sequential):
+    def __init__(self, emb_size, n_classes):
+        super().__init__()
+        self.clshead = nn.Sequential(
+            Reduce('b n e -> b e', reduction='mean'),
+            nn.LayerNorm(emb_size),
+            nn.Linear(emb_size, n_classes)
+        )
+
+    def forward(self, x):
+        out = self.clshead(x)
+        return out
+        # return x, out
+
+
+class ViT(nn.Sequential):
+    def __init__(self, emb_size=10, depth=3, n_classes=3, **kwargs):
+        super().__init__(
+            ResidualAdd(
+                nn.Sequential(
+                    nn.LayerNorm(512),
+                    channel_attention(),
+                    nn.Dropout(0.5),
+                )
+            ),
+
+            PatchEmbedding(emb_size),
+            TransformerEncoder(depth, emb_size),
+            ClassificationHead(emb_size, n_classes)
+        )
+
+
+class channel_attention(pl.LightningModule):
+    def __init__(self, sequence_num=512, inter=30):
+        super(channel_attention, self).__init__()
+        self.sequence_num = sequence_num
+        self.inter = inter
+        self.extract_sequence = int(self.sequence_num / self.inter)  # You could choose to do that for less computation
+
+        self.query = nn.Sequential(
+            nn.Linear(16, 16),
+            nn.LayerNorm(16),  # also may introduce improvement to a certain extent
+            nn.Dropout(0.3)
+        )
+        self.key = nn.Sequential(
+            nn.Linear(16, 16),
+            nn.LayerNorm(16),
+            nn.Dropout(0.3)
+        )
+
+        self.projection = nn.Sequential(
+            nn.Linear(16, 16),
+            nn.LayerNorm(16),
+            nn.Dropout(0.3),
+        )
+
+        self.drop_out = nn.Dropout(0)
+        self.pooling = nn.AvgPool2d(kernel_size=(1, self.inter), stride=(1, self.inter))
+
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.xavier_normal_(m.weight)
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0.0)
+
+    def forward(self, x):
+        temp = rearrange(x, 'b o c s->b o s c')
+        temp_query = rearrange(self.query(temp), 'b o s c -> b o c s')
+        temp_key = rearrange(self.key(temp), 'b o s c -> b o c s')
+
+        channel_query = self.pooling(temp_query)
+        channel_key = self.pooling(temp_key)
+
+        scaling = self.extract_sequence ** (1 / 2)
+
+        channel_atten = torch.einsum('b o c s, b o m s -> b o c m', channel_query, channel_key) / scaling
+
+        channel_atten_score = F.softmax(channel_atten, dim=-1)
+        channel_atten_score = self.drop_out(channel_atten_score)
+
+        out = torch.einsum('b o c s, b o c m -> b o c s', x, channel_atten_score)
+        '''
+        projections after or before multiplying with attention score are almost the same.
+        '''
+        out = rearrange(out, 'b o c s -> b o s c')
+        out = self.projection(out)
+        out = rearrange(out, 'b o s c -> b o c s')
+        return out
+
+
+class Trans(pl.LightningModule):
+    def __init__(self):
+        super(Trans, self).__init__()
+        self.batch_size = 32
+        self.n_epochs = 1000
+        self.img_height = 22
+        self.img_width = 600
+        self.channels = 1
+        self.c_dim = 4
+        self.lr = 0.0002
+        self.b1 = 0.5
+        self.b2 = 0.9
+        self.start_epoch = 0
+        self.root = '...'  # the path of data
+
+        self.pretrain = False
+
+        self.img_shape = (self.channels, self.img_height, self.img_width)  # something no use
+
+        self.Tensor = torch.cuda.FloatTensor
+        self.LongTensor = torch.cuda.LongTensor
+
+        self.criterion_l1 = torch.nn.L1Loss()
+        self.criterion_l2 = torch.nn.MSELoss()
+        self.criterion_cls = torch.nn.CrossEntropyLoss()
+
+        self.model = ViT()
+
+        self.centers = {}
+
+        self.accuracy_train = torchmetrics.Precision(task="multiclass", average='macro', num_classes=3)
+        self.accuracy_test = torchmetrics.Precision(task="multiclass", average='macro', num_classes=3)
+        self.accuracy_val = torchmetrics.Precision(task="multiclass", average='macro', num_classes=3)
+
+        self.f1 = torchmetrics.F1Score(task="multiclass", num_classes=3)
+        self.confmat = torchmetrics.ConfusionMatrix(task="multiclass", num_classes=3)
+        self.roc = torchmetrics.ROC(task='multilabel', num_labels=3)
+
+    def forward(self, x):
+        x = torch.unsqueeze(x, 1)
+        x = self.model(x)
+        out = F.softmax(x, dim=-1)
+        return out
+
+    def configure_optimizers(self):
+        optimizer = Adam(self.parameters(), lr=1e-3)
+        return optimizer
+
+    def training_step(self, batch, batch_idx):
+        data, label = batch
+
+        # get predictions
+        output = self(data)
+
+        # convert for loss calculation
+        label = F.one_hot(label, num_classes=3)
+
+        # calculate loss
+        loss = F.binary_cross_entropy(output, label.to(torch.float32))
+        self.log("train_loss", loss)
+
+        # calculate accuracy
+        self.accuracy_train.update(output, label)
+        self.log('train_acc', self.accuracy_train, on_epoch=True, on_step=True)
+
+        # calculate f1 score
+        self.f1.update(output, label)
+        self.log('train_f1', self.f1)
+
+        self.confmat.update(output, label)
+
+        return loss
+
+    def test_step(self, batch, batch_idx):
+        data, label = batch
+
+        # get predictions
+        output = self(data)
+
+        # convert for loss calculation
+        label = F.one_hot(label, num_classes=3)
+
+        # calculate loss
+        loss = F.binary_cross_entropy(output, label.to(torch.float32))
+        self.log("test_loss", loss)
+
+        # calculate accuracy
+        self.accuracy_test.update(output, label)
+        self.log('test_acc', self.accuracy_test)
+
+        # calculate f1 score
+        self.f1.update(output, label)
+        self.log('train_f1', self.f1)
+
+    def validation_step(self, batch, batch_idx):
+        data, label = batch
+
+        # get predictions
+        output = self(data)
+
+        # convert for loss calculation
+        label = F.one_hot(label, num_classes=3)
+
+        # calculate loss
+        loss = F.binary_cross_entropy(output, label.to(torch.float32))
+        self.log("validation_loss", loss)
+
+        # calculate accuracy
+        self.accuracy_val.update(output, label)
+        self.log('validation_acc', self.accuracy_val)
+
+        # calculate f1 score
+        self.f1.update(output, label)
+        self.log('train_f1', self.f1, on_epoch=True)
+
+    def on_train_epoch_end(self):
+        cm = self.confmat.compute().detach().cpu().numpy()
+
+        import seaborn as sn
+        import pandas as pd
+        import matplotlib
+        matplotlib.use('agg')
+        import matplotlib.pyplot as plt
+
+        fig, ax1 = plt.subplots(1)
+        df_cm = pd.DataFrame(cm, index=[i for i in "012"],
+                             columns=[i for i in "012"])
+        sn.heatmap(df_cm, annot=True, ax=ax1)
+
+        # add the confusion matrix to TensorBoard
+        self.logger.experiment.add_figure("Confusion Matrix", fig, self.current_epoch)
