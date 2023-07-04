@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
 class EEGDataProcessor():
     DATASET_FREQ = 2048
-    DOWNSAMPLED_FREQ = 256
+    DOWNSAMPLED_FREQ = 512
 
     CLASSES_COUNT = 3
 

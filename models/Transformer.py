@@ -1,18 +1,16 @@
 import math
 import torch
-import torchmetrics
 import torch.nn.functional as F
 import pytorch_lightning as pl
 
 from torch import nn
 from torch import Tensor
-from torch.optim import Adam
-
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange, Reduce
+from models.ModelWrapper import ModelWrapper
 
 
-class PatchEmbedding(pl.LightningModule):
+class PatchEmbedding(ModelWrapper):
     def __init__(self, emb_size):
         # self.patch_size = patch_size
         super().__init__()
@@ -240,104 +238,8 @@ class Trans(pl.LightningModule):
 
         self.centers = {}
 
-        self.accuracy_train = torchmetrics.Precision(task="multiclass", average='macro', num_classes=3)
-        self.accuracy_test = torchmetrics.Precision(task="multiclass", average='macro', num_classes=3)
-        self.accuracy_val = torchmetrics.Precision(task="multiclass", average='macro', num_classes=3)
-
-        self.f1 = torchmetrics.F1Score(task="multiclass", num_classes=3)
-        self.confmat = torchmetrics.ConfusionMatrix(task="multiclass", num_classes=3)
-        self.roc = torchmetrics.ROC(task='multilabel', num_labels=3)
-
     def forward(self, x):
         x = torch.unsqueeze(x, 1)
         x = self.model(x)
         out = F.softmax(x, dim=-1)
         return out
-
-    def configure_optimizers(self):
-        optimizer = Adam(self.parameters(), lr=1e-3)
-        return optimizer
-
-    def training_step(self, batch, batch_idx):
-        data, label = batch
-
-        # get predictions
-        output = self(data)
-
-        # convert for loss calculation
-        label = F.one_hot(label, num_classes=3)
-
-        # calculate loss
-        loss = F.binary_cross_entropy(output, label.to(torch.float32))
-        self.log("train_loss", loss)
-
-        # calculate accuracy
-        self.accuracy_train.update(output, label)
-        self.log('train_acc', self.accuracy_train, on_epoch=True, on_step=True)
-
-        # calculate f1 score
-        self.f1.update(output, label)
-        self.log('train_f1', self.f1)
-
-        self.confmat.update(output, label)
-
-        return loss
-
-    def test_step(self, batch, batch_idx):
-        data, label = batch
-
-        # get predictions
-        output = self(data)
-
-        # convert for loss calculation
-        label = F.one_hot(label, num_classes=3)
-
-        # calculate loss
-        loss = F.binary_cross_entropy(output, label.to(torch.float32))
-        self.log("test_loss", loss)
-
-        # calculate accuracy
-        self.accuracy_test.update(output, label)
-        self.log('test_acc', self.accuracy_test)
-
-        # calculate f1 score
-        self.f1.update(output, label)
-        self.log('train_f1', self.f1)
-
-    def validation_step(self, batch, batch_idx):
-        data, label = batch
-
-        # get predictions
-        output = self(data)
-
-        # convert for loss calculation
-        label = F.one_hot(label, num_classes=3)
-
-        # calculate loss
-        loss = F.binary_cross_entropy(output, label.to(torch.float32))
-        self.log("validation_loss", loss)
-
-        # calculate accuracy
-        self.accuracy_val.update(output, label)
-        self.log('validation_acc', self.accuracy_val)
-
-        # calculate f1 score
-        self.f1.update(output, label)
-        self.log('train_f1', self.f1, on_epoch=True)
-
-    def on_train_epoch_end(self):
-        cm = self.confmat.compute().detach().cpu().numpy()
-
-        import seaborn as sn
-        import pandas as pd
-        import matplotlib
-        matplotlib.use('agg')
-        import matplotlib.pyplot as plt
-
-        fig, ax1 = plt.subplots(1)
-        df_cm = pd.DataFrame(cm, index=[i for i in "012"],
-                             columns=[i for i in "012"])
-        sn.heatmap(df_cm, annot=True, ax=ax1)
-
-        # add the confusion matrix to TensorBoard
-        self.logger.experiment.add_figure("Confusion Matrix", fig, self.current_epoch)
