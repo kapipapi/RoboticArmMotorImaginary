@@ -1,5 +1,4 @@
 import os
-
 import numpy as np
 
 
@@ -7,6 +6,8 @@ class FileConverter:
     DATASET_FREQ = 2048
     CHANNELS_IN_FILE = 16 + 1  # with trigger
     HEADER_LENGTH = 256 * (CHANNELS_IN_FILE + 1)
+
+    impulses_names = ["BREAK", "LEFT", "RIGHT", "RELAX"]
 
     def preconvert_file(self, i_file_path):
         file_len_bytes = os.stat(i_file_path).st_size
@@ -44,3 +45,59 @@ class FileConverter:
         raw_data -= 0.55 * (raw_data[6, :] + raw_data[8, :])  # referencing the signal
 
         return np.array(raw_data), markers
+
+    def split_file(self, filename):
+        signals, markers = FileConverter().preconvert_file(filename)
+
+        all_slices = []
+        type_of_slice = None
+        slicing = False
+        slice_start_index = None
+        for i in range(len(markers)):
+            if i % 1000 == 0:
+                print(i + 1, "/", len(markers), " " * 100, end="\r")
+
+            m = markers[i]
+
+            if not slicing:
+                if m > 1:
+                    slicing = True
+                    slice_start_index = i
+                    type_of_slice = int(np.log2(m))
+                else:
+                    continue
+
+            else:
+                if m == 1:
+                    current_slice = signals[:, slice_start_index:i]
+
+                    all_slices.append({
+                        "impulse_name": self.impulses_names[type_of_slice],
+                        "impulse_index": type_of_slice,
+                        "impulse_signal": current_slice,
+                        "sample_rate": FileConverter.DATASET_FREQ,
+                    })
+
+                    slicing = False
+                    slice_start_index = None
+                    type_of_slice = None
+                else:
+                    continue
+
+        bn = os.path.basename(filename)[:-4]
+        savepath = os.path.join("dataset", bn)
+
+        if not os.path.exists(savepath):
+            os.makedirs(savepath)
+
+        for i, impulse in enumerate(all_slices):
+            data_filename = os.path.join(savepath, f"{i}.npy")
+            np.save(data_filename, impulse)
+
+
+if __name__ == '__main__':
+    converter = FileConverter()
+    for i in range(1, 5):
+        converter.split_file(f"../dataset/sesja{i}_pawel_zaciskanie_dloni.bdf")
+        print(f"Finished converting file number {i}")
+

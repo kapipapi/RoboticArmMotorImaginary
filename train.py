@@ -2,24 +2,33 @@ import argparse
 import pytorch_lightning as pl
 from torch import manual_seed
 from lightning.pytorch.loggers import TensorBoardLogger
-from models import EEGNet, EEGInception, DeepConvNet, Transformer
 from dataset import EEGDataset
-from Utilities.preprocessing import EEGDataProcessor
+from models.DeepConvNet import DeepConvNet
+from models.EEGNet import EEGNet
+from models.Transformer import Transformer
+from utils.preprocessing import EEGDataProcessor
 from torchvision.transforms import Compose
 from torch.utils.data import random_split
 from torch.utils.data import DataLoader
 
 
 # TODO: Lightning DataModule + refactor
+# TODO: K-fold shuffle
+class EEGInception:
+    pass
+
+
 def train():
     manual_seed(42)
     pp = EEGDataProcessor()
 
     transforms = Compose([
         pp.correct_offset,
+        pp.amplitude_conversion,
         pp.filter,
         pp.downsample,
         pp.normalize,
+        pp.natural_logarithm,
     ])
 
     dataset = EEGDataset("./dataset/kuba", transforms)
@@ -36,7 +45,7 @@ def train():
         "Transformer": Transformer(),
     }
 
-    logger = TensorBoardLogger("tb_logs", name="my_eeg_cnn_model")
+    logger = TensorBoardLogger("tb_logs", name=f"{args.model}_run")
 
     trainer = pl.Trainer(max_epochs=args.epochs, logger=logger)
     trainer.fit(models[args.model], train_loader, val_loader)

@@ -1,9 +1,16 @@
 import torch
 import torchmetrics
+import seaborn as sn
+import pandas as pd
+import matplotlib
+
+import matplotlib.pyplot as plt
 import torch.nn.functional as F
 import pytorch_lightning as pl
 
 from torch.optim import Adam
+
+matplotlib.use('agg')
 
 
 class ModelWrapper(pl.LightningModule):
@@ -96,12 +103,6 @@ class ModelWrapper(pl.LightningModule):
 
     def on_train_epoch_end(self):
         cm = self.confmat.compute().detach().cpu().numpy()
-
-        import seaborn as sn
-        import pandas as pd
-        import matplotlib
-        matplotlib.use('agg')
-        import matplotlib.pyplot as plt
 
         fig, ax1 = plt.subplots(1)
         df_cm = pd.DataFrame(cm, index=[i for i in "012"],

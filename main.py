@@ -1,18 +1,14 @@
-import matplotlib.pyplot as plt
-import numpy as np
+import torch
 
-from Utilities.converter import FileConverter
+from gui.booth import Booth
+from models import Transformer
 
-data = FileConverter().preconvert_file("/home/administrator/Documents/dataset-eeg/sesja1_pawel_zaciskanie_dloni.bdf")
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-print("converted")
+model = Transformer()
 
-s0 = data[0]
+# TODO: Rename after training
+# model.load_state_dict(torch.load(".model_76_final.pth", map_location=device))
+model.to(device)
 
-samples = FileConverter.DATASET_FREQ * 6
-
-s0_mean = np.convolve(s0, np.ones(samples)/samples, mode='valid')
-
-fig, ax = plt.subplots()
-ax.plot(s0_mean)
-plt.show()
+b = Booth(model=model, device=device)
