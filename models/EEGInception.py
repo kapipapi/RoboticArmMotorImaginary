@@ -14,11 +14,11 @@ class CustomPad(nn.Module):
         return F.pad(x, self.padding)
 
 
-class Inception(ModelWrapper):
+class EEGInception(ModelWrapper):
     def __init__(self, input_time=1000, fs=128, ncha=8, filters_per_branch=8,
                  scales_time=(500, 250, 125), dropout_rate=0.25,
                  activation=nn.ELU(inplace=True), n_classes=2):
-        super(Inception, self).__init__()
+        super(EEGInception, self).__init__()
 
         input_samples = int(input_time * fs / 1000)
         scales_samples = [int(s * fs / 1000) for s in scales_time]

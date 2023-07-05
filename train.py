@@ -4,6 +4,7 @@ from torch import manual_seed
 from lightning.pytorch.loggers import TensorBoardLogger
 from dataset import EEGDataset
 from models.DeepConvNet import DeepConvNet
+from models.EEGInception import EEGInception
 from models.EEGNet import EEGNet
 from models.Transformer import Transformer
 from utils.preprocessing import EEGDataProcessor
@@ -14,9 +15,6 @@ from torch.utils.data import DataLoader
 
 # TODO: Lightning DataModule + refactor
 # TODO: K-fold shuffle
-class EEGInception:
-    pass
-
 
 def train():
     manual_seed(42)
