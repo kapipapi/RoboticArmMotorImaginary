@@ -1,18 +1,20 @@
-import torch.nn as nn
+import torch
 import torch.functional as F
+import matplotlib
+
+from torch import nn
+from models.ModelWrapper import ModelWrapper
+
+matplotlib.use('agg')
 
 
-# Data was originally bandpass filtered 1-40Hz
-# and downsampled to 128Hz
-
-
-class EEGNet(nn.Module):
+class EEGNet(ModelWrapper):
     def __init__(self):
         super(EEGNet, self).__init__()
-        self.T = 120
+        self.T = 512
 
         # Layer 1
-        self.conv1 = nn.Conv2d(1, 16, (1, 64), padding=0)
+        self.conv1 = nn.Conv2d(1, 16, (1, 16), padding=0)
         self.batchnorm1 = nn.BatchNorm2d(16, False)
 
         # Layer 2
@@ -29,11 +31,13 @@ class EEGNet(nn.Module):
 
         # FC Layer
         # NOTE: This dimension will depend on the number of timestamps per sample in your data.
-        # I have 120 timepoints.
-        self.fc1 = nn.Linear(4 * 2 * 7, 1)
+        # I have 120 timepoints. 
+        self.fc1 = nn.Linear(4 * 2 * 32, 3)
 
     def forward(self, x):
         # Layer 1
+        x = x.permute(0, 2, 1)
+        x = torch.unsqueeze(x, 1)
         x = F.elu(self.conv1(x))
         x = self.batchnorm1(x)
         x = F.dropout(x, 0.25)
@@ -54,6 +58,7 @@ class EEGNet(nn.Module):
         x = self.pooling3(x)
 
         # FC Layer
-        x = x.view(-1, 4 * 2 * 7)
-        x = F.sigmoid(self.fc1(x))
+        x = x.reshape(-1, 4 * 2 * 32)
+        x = F.softmax(self.fc1(x), dim=-1)
+
         return x
