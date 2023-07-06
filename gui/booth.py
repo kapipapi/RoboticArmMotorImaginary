@@ -7,12 +7,11 @@ from gui.EEGThread import EEGThread
 
 
 class Booth:
-    def __init__(self, model: torch.nn.Module, device: torch.device):
-
+    # def __init__(self, model: torch.nn.Module, device: torch.device):
+    def __init__(self):
         self.model = None
         self.root = None
         self.canvas = None
-        self.init_tk()
 
         self.cursor = None
         self.cursor_size = 5
@@ -23,8 +22,9 @@ class Booth:
         self.boxes = []
 
         self.capture = None
+        self.init_tk()
         self.init_capture()
-        self.init_model(model, device)
+        # self.init_model(model, device)
         self.update()
 
     def init_tk(self):
@@ -36,6 +36,7 @@ class Booth:
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
         self.canvas = tk.Canvas(self.root, width=640, height=480)
         self.canvas.pack()
+        self.draw_cursor()
         self.draw_boxes(3)  # TODO: Function to receive object count
         self.root.mainloop()
 
@@ -57,7 +58,9 @@ class Booth:
         x2 = self.cursor_x + self.cursor_size
         y2 = self.cursor_y + self.cursor_size
 
-        return self.canvas.create_oval(x1, y1, x2, y2, fill="red")
+        self.cursor = self.canvas.create_oval(x1, y1, x2, y2, fill="red")
+
+        return self.cursor
 
     def update_cursor(self, event):
         if event.keysym == "Up":
