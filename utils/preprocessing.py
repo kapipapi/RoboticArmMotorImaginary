@@ -36,7 +36,7 @@ class EEGDataProcessor:
         x = self.filter(x)
         x = self.downsample(x)
         x = self.normalize(x)
-        x = self.natural_logarithm(x)
+        # x = self.natural_logarithm(x)
         return x
 
     def filter(self, buffer):

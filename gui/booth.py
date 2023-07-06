@@ -97,6 +97,10 @@ class Booth:
             return False
         return True
 
+    @staticmethod
+    def visualize_sample(sample):
+        pass
+
     def reset_cursor(self):
         self.cursor_x = self.init_cursor_x
         self.cursor_y = self.init_cursor_y
