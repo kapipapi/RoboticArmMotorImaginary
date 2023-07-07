@@ -30,8 +30,8 @@ class EEGDataProcessor:
                             self.DATASET_FREQ)
         self.high_b, self.high_a = butter(f_ord, wn, 'highpass', False, 'ba', self.DATASET_FREQ)
 
-    def forward(self, buffer):
-        x = self.correct_offset(buffer)
+    def forward(self, x):
+        # x = self.correct_offset(x)
         x = self.amplitude_conversion(x)
         x = self.filter(x)
         x = self.downsample(x)
