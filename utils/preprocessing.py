@@ -24,26 +24,38 @@ class EEGDataProcessor:
     def __init__(self):
         f_ord, wn = buttord(self.LOW_PASS_FREQ_PB, self.LOW_PASS_FREQ_SB, self.MAX_LOSS_PB, self.MIN_ATT_SB, False,
                             self.DATASET_FREQ)
-        self.low_b, self.low_a = butter(f_ord, wn, 'lowpass', False, 'ba', self.DATASET_FREQ)
+        self.low_b, self.low_a, *rest = butter(f_ord, wn, 'lowpass', False, 'ba', self.DATASET_FREQ)
 
         f_ord, wn = buttord(self.HIGH_PASS_FREQ_PB, self.HIGH_PASS_FREQ_SB, self.MAX_LOSS_PB, self.MIN_ATT_SB, False,
                             self.DATASET_FREQ)
-        self.high_b, self.high_a = butter(f_ord, wn, 'highpass', False, 'ba', self.DATASET_FREQ)
+        self.high_b, self.high_a, *rest = butter(f_ord, wn, 'highpass', False, 'ba', self.DATASET_FREQ)
 
     def forward(self, x):
-        # x = self.correct_offset(x)
+        # x = self.correct_offset(x)          # TODO: might not work
         x = self.amplitude_conversion(x)
-        x = self.filter(x)
+        x = self.filter(x)                  # TODO: Check with EEG
         x = self.downsample(x)
         x = self.normalize(x)
         # x = self.natural_logarithm(x)
         return x
 
+    def remove_dc_offset(self, buffer, dc_means):
+        buffer_no_dc = np.copy(buffer)
+        # multiplying by unit and removing the mean (DC offset)
+        buffer_no_dc -= dc_means[:, None]
+        buffer_no_dc *= 0.03125
+        return buffer_no_dc
+
+    # def filter(self, buffer):
+    #     for c in range(buffer.shape[0]):
+    #         buffer[c] = lfilter(self.low_b, self.low_a, buffer[c])
+    #         buffer[c] = lfilter(self.high_b, self.high_a, buffer[c])
+    #     return buffer
+
     def filter(self, buffer):
-        for c in range(buffer.shape[0]):
-            buffer[c] = lfilter(self.low_b, self.low_a, buffer[c])
-            buffer[c] = lfilter(self.high_b, self.high_a, buffer[c])
-        return buffer
+        converted_data = np.apply_along_axis(lambda c: lfilter(self.low_b, self.low_a, c), 1, buffer)
+        converted_data = np.apply_along_axis(lambda c: lfilter(self.high_b, self.high_a, c), 1, converted_data)
+        return converted_data
 
     def correct_offset(self, buffer):
         for c in range(buffer.shape[0]):

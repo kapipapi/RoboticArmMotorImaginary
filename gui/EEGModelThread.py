@@ -1,5 +1,6 @@
 import threading
 import torch
+import numpy as np
 
 from gui import EEGThread
 from utils.preprocessing import EEGDataProcessor
@@ -33,7 +34,9 @@ class EEGModelThread:
     def classify_sample(self, x):
         self.model.eval()
         with torch.no_grad():
-            return self.model(x)
+            output = self.model(x)
+            result = np.argmax(output.numpy())
+            return result
 
     def update(self):
         while self.started:
@@ -42,8 +45,6 @@ class EEGModelThread:
             if sample is not None:
                 sample = self.preprocess_sample(sample)
                 self.current_output = self.classify_sample(sample)
-            else:
-                print("[!] Waiting for the buffer to fill up")
             return self.current_output
 
     def start(self):

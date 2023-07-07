@@ -33,6 +33,8 @@ class EEGThread:
         self.sec_samp = 0
         self.received_data_struct_buffer = bytearray()
 
+        self.latest_signal = None
+
     def initialize_socket(self):
         self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -64,13 +66,19 @@ class EEGThread:
             return self.buffer
 
     def update(self):
-        pass
+        while self.started:
+            output = self.decode_tcp()
+            if signal is not None:
+                self.latest_signal = output
+            else:
+                print("[!] Waiting for the buffer to fill up")
 
     def start(self):
         if self.started:
             print('[!] Asynchronous capturing has already been started.')
             return None
-            self.started = True
+        self.started = True
+
         self.thread = threading.Thread(
             target=self.update,
             args=()
@@ -96,13 +104,8 @@ if __name__ == '__main__':
 
     while True:
         signal = server.decode_tcp()
-        print(signal)
         if signal is not None:
+            processor.forward(signal)
             for i in range(15):
-                plt.plot(processor.amplitude_conversion(signal[i]))
+                plt.plot(signal[i])
             plt.show()
-
-
-
-
-
