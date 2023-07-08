@@ -1,6 +1,6 @@
-import time
 import threading
 import torch
+import numpy as np
 
 from gui import EEGThread
 from utils.preprocessing import EEGDataProcessor
@@ -20,6 +20,8 @@ class EEGModelThread:
 
         self.load_model()
 
+        self.current_output = None
+
     def load_model(self):
         if self.device is None:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -32,17 +34,18 @@ class EEGModelThread:
     def classify_sample(self, x):
         self.model.eval()
         with torch.no_grad():
-            return self.model(x)
+            output = self.model(x)
+            result = np.argmax(output.numpy())
+            return result
 
     def update(self):
         while self.started:
-            start = time.time()
             sample = self.capture.decode_tcp()
 
-            # TODO: Buffer fill if-statement
-
-            sample = self.preprocess_sample(sample)
-            output = self.classify_sample(sample)
+            if sample is not None:
+                sample = self.preprocess_sample(sample)
+                self.current_output = self.classify_sample(sample)
+            return self.current_output
 
     def start(self):
         if self.started:

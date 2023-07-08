@@ -47,7 +47,7 @@ class FileConverter:
         return np.array(raw_data), markers
 
     def split_file(self, filename):
-        signals, markers = FileConverter().preconvert_file(filename)
+        signals, markers = self.preconvert_file(filename)
 
         all_slices = []
         type_of_slice = None
