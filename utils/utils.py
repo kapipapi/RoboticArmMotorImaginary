@@ -1,18 +1,8 @@
 import numpy as np
-import pywt
 
 CHANNELS = 16  # BioSemi channels count
 SAMPLES = 128  # BioSemi TCP samples per channel count
 WORDS = CHANNELS * SAMPLES
-
-
-def eeg_signal_to_dwt(data):
-    c_allchannels = np.empty(0)
-    for channel in data:
-        ca1, cd1 = pywt.dwt(channel, 'db1')
-        c_allchannels = np.append(c_allchannels, ca1)
-        c_allchannels = np.append(c_allchannels, cd1)
-    return c_allchannels
 
 
 def decode_data_from_bytes(raw_data):

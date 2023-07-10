@@ -14,10 +14,8 @@ matplotlib.use('agg')
 
 
 class ModelWrapper(pl.LightningModule):
-    def __init__(self, model):
+    def __init__(self):
         super().__init__()
-
-        self.model = model
 
         self.accuracy_train = torchmetrics.Precision(task="multiclass", average='macro', num_classes=3)
         self.accuracy_test = torchmetrics.Precision(task="multiclass", average='macro', num_classes=3)

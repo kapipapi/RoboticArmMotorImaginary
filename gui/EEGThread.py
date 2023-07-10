@@ -21,6 +21,7 @@ MEAN_PERIOD_LEN = 8192
 
 class EEGThread:
     def __init__(self):
+        self.buffer_mean_dc = None
         self.thread = None
         self.tcp_socket = None
         self.started = True
@@ -59,11 +60,16 @@ class EEGThread:
         self.buffer = np.roll(self.buffer, -SAMPLES, axis=1)
         self.buffer[:, -SAMPLES:] = decoded_data
 
-        if self.buffer_filled + SAMPLES < SERVER_BUFFER_LEN:
+        # Mean for calculating DC component
+        self.buffer_mean_dc = np.roll(self.buffer_mean_dc, -SAMPLES, axis=1)
+        self.buffer_mean_dc[:, -SAMPLES:] = decoded_data
+
+        if self.buffer_filled + SAMPLES < SERVER_BUFFER_LEN: # TODO: Sprawdzić wypełnienie bufora MEAN
             self.buffer_filled += SAMPLES
             self.sec_samp += 1
         else:
-            return self.buffer
+            dc_means = self.buffer_mean_dc.mean(axis=1)
+            return self.buffer, dc_means
 
     def update(self):
         while self.started:
@@ -103,9 +109,10 @@ if __name__ == '__main__':
     processor = EEGDataProcessor()
 
     while True:
-        signal = server.decode_tcp()
+        signal, mean = server.decode_tcp()
         if signal is not None:
-            processor.forward(signal)
+            signal = processor.remove_dc_offset(signal, mean)
+            signal = processor.forward(signal)
             for i in range(15):
                 plt.plot(signal[i])
             plt.show()

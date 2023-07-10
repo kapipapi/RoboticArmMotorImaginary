@@ -24,16 +24,16 @@ class EEGDataProcessor:
     def __init__(self):
         f_ord, wn = buttord(self.LOW_PASS_FREQ_PB, self.LOW_PASS_FREQ_SB, self.MAX_LOSS_PB, self.MIN_ATT_SB, False,
                             self.DATASET_FREQ)
-        self.low_b, self.low_a, *rest = butter(f_ord, wn, 'lowpass', False, 'ba', self.DATASET_FREQ)
+        self.low_b, self.low_a, *args = butter(f_ord, wn, 'lowpass', False, 'ba', self.DATASET_FREQ)
 
         f_ord, wn = buttord(self.HIGH_PASS_FREQ_PB, self.HIGH_PASS_FREQ_SB, self.MAX_LOSS_PB, self.MIN_ATT_SB, False,
                             self.DATASET_FREQ)
-        self.high_b, self.high_a, *rest = butter(f_ord, wn, 'highpass', False, 'ba', self.DATASET_FREQ)
+        self.high_b, self.high_a, *args = butter(f_ord, wn, 'highpass', False, 'ba', self.DATASET_FREQ)
 
     def forward(self, x):
-        # x = self.correct_offset(x)          # TODO: might not work
+        # x = self.correct_offset(x)          # TODO: Fix function
         x = self.amplitude_conversion(x)
-        x = self.filter(x)                  # TODO: Check with EEG
+        x = self.filter(x)  # TODO: Check with EEG
         x = self.downsample(x)
         x = self.normalize(x)
         # x = self.natural_logarithm(x)
@@ -41,7 +41,7 @@ class EEGDataProcessor:
 
     def remove_dc_offset(self, buffer, dc_means):
         buffer_no_dc = np.copy(buffer)
-        # multiplying by unit and removing the mean (DC offset)
+
         buffer_no_dc -= dc_means[:, None]
         buffer_no_dc *= 0.03125
         return buffer_no_dc
@@ -62,8 +62,8 @@ class EEGDataProcessor:
             buffer[c] = buffer[c] - np.mean(buffer[c])
         return buffer
 
-    def downsample(self, buffer):
-        sampling_factor = self.DATASET_FREQ / self.DOWNSAMPLED_FREQ
+    def downsample(self, buffer, freq=DOWNSAMPLED_FREQ):
+        sampling_factor = self.DATASET_FREQ / freq
         downsampled_signal = resample(buffer, int(buffer.shape[-1] / sampling_factor), axis=-1)
         return downsampled_signal
 

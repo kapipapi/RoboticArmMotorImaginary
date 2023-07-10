@@ -1,14 +1,13 @@
 import torch
 
 from gui.booth import Booth
-from models import Transformer
+from models.EEGInception import EEGInception
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-model = Transformer()
+model = EEGInception()
 
-# TODO: Rename after training
-# model.load_state_dict(torch.load(".model_76_final.pth", map_location=device))
+model.load_state_dict(torch.load("gui/inception.pt", map_location=device))
 model.to(device)
 
 b = Booth(model=model, device=device)

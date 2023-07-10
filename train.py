@@ -1,5 +1,6 @@
 import argparse
 import pytorch_lightning as pl
+from pytorch_lightning.callbacks import EarlyStopping
 from torch import manual_seed
 from lightning.pytorch.loggers import TensorBoardLogger
 from dataset import EEGDataset
@@ -45,7 +46,7 @@ def train():
 
     logger = TensorBoardLogger("tb_logs", name=f"{args.model}_run")
 
-    trainer = pl.Trainer(max_epochs=args.epochs, logger=logger)
+    trainer = pl.Trainer(max_epochs=args.epochs, logger=logger, callbacks=[EarlyStopping(monitor="validation_loss", mode="min")])
     trainer.fit(models[args.model], train_loader, val_loader)
     trainer.test(models[args.model], test_loader)
 

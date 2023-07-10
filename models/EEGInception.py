@@ -15,9 +15,9 @@ class CustomPad(nn.Module):
 
 
 class EEGInception(ModelWrapper):
-    def __init__(self, input_time=1000, fs=128, ncha=8, filters_per_branch=8,
+    def __init__(self, input_time=4000, fs=512, ncha=16, filters_per_branch=8,
                  scales_time=(500, 250, 125), dropout_rate=0.25,
-                 activation=nn.ELU(inplace=True), n_classes=2):
+                 activation=nn.ELU(inplace=True), n_classes=3):
         super(EEGInception, self).__init__()
 
         input_samples = int(input_time * fs / 1000)
@@ -94,8 +94,8 @@ class EEGInception(ModelWrapper):
 
     def forward(self, x):
         x = torch.unsqueeze(x, 1)
-        x = x.permute((0, 1, 3, 2))
-        x = torch.cat([net(x) for net in self.inception1], 1)  # concat
+        x = x.permute(0, 1, 3, 2)
+        x = torch.cat([net(x) for net in self.inception1], 1)
         x = self.avg_pool1(x)
         x = torch.cat([net(x) for net in self.inception2], 1)
         x = self.avg_pool2(x)
