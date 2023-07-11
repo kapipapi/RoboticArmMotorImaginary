@@ -65,7 +65,7 @@ class FileConverter:
                     slice_start_index = i
                     type_of_slice = int(np.log2(m))
                 else:
-                    continue
+                      continue
 
             else:
                 if m == 1:

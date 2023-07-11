@@ -1,24 +1,22 @@
 import threading
 import torch
 import numpy as np
-from torch.utils.data import DataLoader
 
-from gui import EEGThread
-from models.EEGInception import EEGInception
+from gui.EEGThread import EEGThread
 from models.Transformer import Transformer
 from utils.preprocessing import EEGDataProcessor
 
 
 class EEGModelThread:
 
-    def __init__(self, model: torch.nn.Module = None, device: torch.device = None):
+    def __init__(self, capture: EEGThread, model: torch.nn.Module = None, device: torch.device = None):
 
-        # self.capture = capture
+        self.capture = capture
         self.started = False
         self.thread = None
 
         self.preprocess = EEGDataProcessor()
-        self.device = device
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.model = model
 
         self.load_model()
@@ -26,9 +24,6 @@ class EEGModelThread:
         self.current_output = None
 
     def load_model(self):
-        if self.device is None:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
         assert self.model is not None
 
     def get_eeg_tensor(self, signal):
@@ -58,8 +53,7 @@ class EEGModelThread:
 
     def update(self):
         while self.started:
-            sample = self.capture.decode_tcp()
-
+            sample = self.capture.decode_tcp()              # TODO: Fix for unpacking 2 args
             if sample is not None:
                 sample = self.get_eeg_tensor(sample)
                 self.current_output = self.classify_sample(sample)
@@ -117,4 +111,3 @@ if __name__ == '__main__':
         output = model(signal)
         result = np.argmax(output.numpy())
         print(f"Label number: {result}")
-

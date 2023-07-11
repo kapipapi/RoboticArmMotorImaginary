@@ -1,7 +1,6 @@
 import socket
 import struct
 import threading
-from time import sleep
 
 import numpy as np
 from utils import utils
@@ -21,19 +20,19 @@ MEAN_PERIOD_LEN = 8192
 
 class EEGThread:
     def __init__(self):
-        self.buffer_mean_dc = None
+
         self.thread = None
-        self.tcp_socket = None
         self.started = True
         self.read_lock = threading.Lock()
         self.preprocess = EEGDataProcessor()
 
         self.buffer = np.zeros((CHANNELS, SERVER_BUFFER_LEN))
+        self.buffer_mean_dc = np.zeros((CHANNELS, MEAN_PERIOD_LEN))
         self.buffer_filled = 0
 
         self.sec_samp = 0
         self.received_data_struct_buffer = bytearray()
-
+        self.tcp_socket = self.initialize_socket()
         self.latest_signal = None
 
     def initialize_socket(self):
@@ -60,11 +59,11 @@ class EEGThread:
         self.buffer = np.roll(self.buffer, -SAMPLES, axis=1)
         self.buffer[:, -SAMPLES:] = decoded_data
 
-        # Mean for calculating DC component
+        # # Mean for calculating DC component
         self.buffer_mean_dc = np.roll(self.buffer_mean_dc, -SAMPLES, axis=1)
         self.buffer_mean_dc[:, -SAMPLES:] = decoded_data
 
-        if self.buffer_filled + SAMPLES < SERVER_BUFFER_LEN: # TODO: Sprawdzić wypełnienie bufora MEAN
+        if self.buffer_filled + SAMPLES < SERVER_BUFFER_LEN:            # TODO: Sprawdzać wypełnienie bufora MEAN
             self.buffer_filled += SAMPLES
             self.sec_samp += 1
         else:
@@ -109,10 +108,10 @@ if __name__ == '__main__':
     processor = EEGDataProcessor()
 
     while True:
-        signal, mean = server.decode_tcp()
-        if signal is not None:
-            signal = processor.remove_dc_offset(signal, mean)
-            signal = processor.forward(signal)
+        data = server.decode_tcp()
+        if data is not None:
+            signal = processor.correct_offset(data[0], data[1])
+            print(signal.shape)
             for i in range(15):
                 plt.plot(signal[i])
             plt.show()

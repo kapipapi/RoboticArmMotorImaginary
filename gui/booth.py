@@ -1,5 +1,6 @@
 import tkinter as tk
 import random
+
 import torch
 
 from gui.EEGModelThread import EEGModelThread
@@ -7,13 +8,14 @@ from gui.EEGThread import EEGThread
 
 
 class Booth:
-    # def __init__(self, model: torch.nn.Module, device: torch.device):
-    def __init__(self):
-        self.model = None
+    def __init__(self, model: torch.nn.Module, device: torch.device):
         self.root = None
         self.canvas = None
-
         self.cursor = None
+        self.capture = None
+        self.label = None
+        self.label_output = None
+
         self.cursor_size = 5
         self.init_cursor_x = 280
         self.init_cursor_y = 280
@@ -21,10 +23,9 @@ class Booth:
         self.cursor_y = self.init_cursor_y
         self.boxes = []
 
-        self.capture = None
-        self.init_tk()
         self.init_capture()
-        # self.init_model(model, device)
+        self.init_model(model, device)
+        self.init_tk()
         self.update()
 
     def init_tk(self):
@@ -36,8 +37,9 @@ class Booth:
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
         self.canvas = tk.Canvas(self.root, width=640, height=480)
         self.canvas.pack()
+        self.label_output = tk.StringVar()
         self.draw_cursor()
-        self.draw_boxes(3)  # TODO: Function to receive object count
+        self.draw_boxes(3)
         self.root.mainloop()
 
     def draw_boxes(self, num_boxes):
@@ -63,15 +65,21 @@ class Booth:
         return self.cursor
 
     def update_cursor(self, event):
+
+        command = self.model.current_output
+
         if event.keysym == "Up":
             self.cursor_y -= 10
-        elif event.keysym == "Down":
-            self.cursor_y += 10
         elif event.keysym == "Left":
             self.cursor_x -= 10
         elif event.keysym == "Right":
             self.cursor_x += 10
+        elif event.keysym == "Down":
+            self.cursor_y += 10
 
+        self.label_output = event.keysym
+        print(command)
+        # print(self.label_output)
         self.draw_cursor()
         self.check_collision()
 
@@ -96,10 +104,6 @@ class Booth:
         if x2 < x3 or x4 < x1 or y2 < y3 or y4 < y1:
             return False
         return True
-
-    @staticmethod
-    def visualize_sample(sample):
-        pass
 
     def reset_cursor(self):
         self.cursor_x = self.init_cursor_x
