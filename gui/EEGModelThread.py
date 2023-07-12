@@ -63,7 +63,6 @@ class EEGModelThread:
             if data is not None:
                 sample = self.get_eeg_tensor(data)
                 self.current_prediction = self.classify_sample(sample)
-                print(self.current_prediction)
 
     def read(self):
         return self.current_prediction

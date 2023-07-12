@@ -24,10 +24,12 @@ class Booth:
         self.cursor_y = self.init_cursor_y
         self.boxes = []
 
+        self.init_tk()
         self.init_capture()
         self.init_model(model)
-        self.init_tk()
         self.update()
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.root.mainloop()
 
     def init_tk(self):
         print("[!] Creating tkinter GUI")
@@ -39,8 +41,6 @@ class Booth:
         self.canvas.pack()
         self.draw_cursor()
         self.draw_boxes(3)
-        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
-        self.root.mainloop()
 
     def draw_boxes(self, num_boxes):
         for _ in range(num_boxes):
@@ -79,7 +79,21 @@ class Booth:
 
     def update_cursor_eeg(self):
         self.command = self.model.read()
-        print(self.command)
+        if self.command == 0:        # RELAX
+            print('RELAX')
+            self.cursor_y -= 5
+        elif self.command == 1:        # LEFT
+            print('LEFT')
+            self.cursor_x -= 5
+        elif self.command == 2:        # RIGHT
+            print('RIGHT')
+            self.cursor_x += 5
+        elif self.command == 3:        # FEET
+            print('FEET')
+            self.cursor_y += 5
+
+        self.draw_cursor()
+        self.check_collision()
 
     def check_collision(self):
         cursor_bbox = self.canvas.bbox(self.cursor)
@@ -128,6 +142,7 @@ class Booth:
 
     def update(self):
         self.update_cursor_eeg()
+        self.root.after(1000, self.update)       # TODO: Update interval
 
     def on_close(self):
         print("Ending processes")
