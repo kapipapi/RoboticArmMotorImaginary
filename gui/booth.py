@@ -79,7 +79,7 @@ class Booth:
 
     def update_cursor_eeg(self):
         self.command = self.model.read()
-        if self.command == 0:        # RELAX
+        if self.command == 0:          # RELAX
             print('RELAX')
             self.cursor_y -= 5
         elif self.command == 1:        # LEFT
