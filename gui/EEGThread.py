@@ -108,7 +108,7 @@ if __name__ == '__main__':
     while True:
         data = server.decode_tcp()
         if data is not None:
-            signal = processor.correct_offset(data[0], data[1])
+            signal = processor.remove_dc_component(data[0], data[1])
             print(signal.shape)
             for i in range(15):
                 plt.plot(signal[i])

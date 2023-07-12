@@ -31,7 +31,7 @@ class EEGDataProcessor:
         self.high_b, self.high_a, *args = butter(f_ord, wn, 'highpass', False, 'ba', self.DATASET_FREQ)
 
     def forward(self, x, mean):
-        x = self.correct_offset(x, mean)            # TODO: Fix function
+        x = self.remove_dc_component(x, mean)            # TODO: Fix function
         x = self.amplitude_conversion(x)
         x = self.filter(x)                      # TODO: Check with EEG
         x = self.downsample(x)
@@ -39,28 +39,23 @@ class EEGDataProcessor:
         # x = self.natural_logarithm(x)
         return x
 
-    def correct_offset(self, buffer, dc_means):
+    def remove_dc_component(self, buffer, dc_means):
         buffer_no_dc = np.copy(buffer)
 
         buffer_no_dc -= dc_means[:, None]
         buffer_no_dc *= 0.03125
         return buffer_no_dc
 
-    # def filter(self, buffer):
-    #     for c in range(buffer.shape[0]):
-    #         buffer[c] = lfilter(self.low_b, self.low_a, buffer[c])
-    #         buffer[c] = lfilter(self.high_b, self.high_a, buffer[c])
-    #     return buffer
-
     def filter(self, buffer):
-        converted_data = np.apply_along_axis(lambda c: lfilter(self.low_b, self.low_a, c), 1, buffer)
-        converted_data = np.apply_along_axis(lambda c: lfilter(self.high_b, self.high_a, c), 1, converted_data)
-        return converted_data
+        for c in range(buffer.shape[0]):
+            buffer[c] = lfilter(self.low_b, self.low_a, buffer[c])
+            buffer[c] = lfilter(self.high_b, self.high_a, buffer[c])
+        return buffer
 
-    # def correct_offset(self, buffer):
-    #     for c in range(buffer.shape[0]):
-    #         buffer[c] = buffer[c] - np.mean(buffer[c])
-    #     return buffer
+    def correct_offset(self, buffer):
+        for c in range(buffer.shape[0]):
+            buffer[c] = buffer[c] - np.mean(buffer[c])
+        return buffer
 
     def downsample(self, buffer, freq=DOWNSAMPLED_FREQ):
         sampling_factor = self.DATASET_FREQ / freq
