@@ -20,10 +20,8 @@ MEAN_PERIOD_LEN = 8192
 
 class EEGThread:
     def __init__(self):
-
         self.thread = None
-        self.started = True
-        self.read_lock = threading.Lock()
+        self.started = False
         self.preprocess = EEGDataProcessor()
 
         self.buffer = np.zeros((CHANNELS, SERVER_BUFFER_LEN))
@@ -33,6 +31,7 @@ class EEGThread:
         self.sec_samp = 0
         self.received_data_struct_buffer = bytearray()
         self.tcp_socket = self.initialize_socket()
+        self.read_lock = threading.Lock()
         self.latest_signal = None
 
     def initialize_socket(self):
@@ -72,11 +71,15 @@ class EEGThread:
 
     def update(self):
         while self.started:
-            output = self.decode_tcp()
+            signal = self.decode_tcp()
             if signal is not None:
-                self.latest_signal = output
+                self.latest_signal = signal
             else:
                 print("[!] Waiting for the buffer to fill up")
+
+    def read(self):
+        with self.read_lock:
+            return self.latest_signal
 
     def start(self):
         if self.started:
@@ -94,11 +97,6 @@ class EEGThread:
     def stop(self):
         self.started = False
         self.thread.join()
-
-
-def visualize_sample(sample):
-    plt.plot(sample, color='magenta')
-    plt.show()
 
 
 if __name__ == '__main__':

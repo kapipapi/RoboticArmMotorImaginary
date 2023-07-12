@@ -3,10 +3,7 @@ import torch
 from gui.booth import Booth
 from models.Transformer import Transformer
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 model = Transformer()
-model.load_state_dict(torch.load("gui/transformer.pt", map_location=device))
-model.to(device)
+model.load_state_dict(torch.load("gui/transformer.pt"))
 
-Booth(model=model, device=device)
+Booth(model=model)

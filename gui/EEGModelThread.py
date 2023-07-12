@@ -6,27 +6,32 @@ from gui.EEGThread import EEGThread
 from models.Transformer import Transformer
 from utils.preprocessing import EEGDataProcessor
 
+SAMPLE_RATE = 2048
+
 
 class EEGModelThread:
-
-    def __init__(self, capture: EEGThread, model: torch.nn.Module = None, device: torch.device = None):
-
+    def __init__(self, capture: EEGThread, model: torch.nn.Module = None):
         self.capture = capture
         self.started = False
         self.thread = None
 
         self.preprocess = EEGDataProcessor()
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        # self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cpu')
         self.model = model
 
         self.load_model()
-
-        self.current_output = None
+        self.current_prediction = None
 
     def load_model(self):
         assert self.model is not None
+        self.model.to(self.device)
 
-    def get_eeg_tensor(self, signal):
+    def get_eeg_tensor(self, sample):
+        signal = sample[0]                          # TODO: Refactor
+        mean = sample[1]
+        end = SAMPLE_RATE * 4
+
         if signal.shape[1] >= end:
             signal = signal[:, :end]
         else:
@@ -37,12 +42,13 @@ class EEGModelThread:
 
         assert signal.shape[1] == end
 
-        signal = self.preprocess_sample(signal)
-        signal = torch.unsqueeze(signal, 0)
-        return signal
+        tensor = self.preprocess_sample(signal, mean)
+        tensor = torch.from_numpy(tensor).float()
+        tensor = torch.unsqueeze(tensor, 0)
+        return tensor
 
-    def preprocess_sample(self, x):
-        return self.preprocess.forward(x)
+    def preprocess_sample(self, x, mean):
+        return self.preprocess.forward(x, mean)
 
     def classify_sample(self, x):
         self.model.eval()
@@ -53,18 +59,21 @@ class EEGModelThread:
 
     def update(self):
         while self.started:
-            sample = self.capture.decode_tcp()              # TODO: Fix for unpacking 2 args
-            if sample is not None:
-                sample = self.get_eeg_tensor(sample)
-                self.current_output = self.classify_sample(sample)
-            return self.current_output
+            data = self.capture.read()
+            if data is not None:
+                sample = self.get_eeg_tensor(data)
+                self.current_prediction = self.classify_sample(sample)
+                print(self.current_prediction)
+
+    def read(self):
+        return self.current_prediction
 
     def start(self):
         if self.started:
             return None
         self.started = True
 
-        print("Model thread starting")
+        print("[!] Model thread starting")
 
         self.thread = threading.Thread(
             target=self.update,
@@ -84,7 +93,7 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = Transformer()
     model.load_state_dict(torch.load("transformer.pt", map_location=device))
-    model.to(device)
+    model.to('cpu')
     sample = np.load('14.npy', allow_pickle=True).item()
     signal = sample["impulse_signal"]
 

@@ -1,6 +1,5 @@
 import tkinter as tk
 import random
-
 import torch
 
 from gui.EEGModelThread import EEGModelThread
@@ -8,13 +7,15 @@ from gui.EEGThread import EEGThread
 
 
 class Booth:
-    def __init__(self, model: torch.nn.Module, device: torch.device):
+    def __init__(self, model: torch.nn.Module):
+        self.model = None
         self.root = None
         self.canvas = None
         self.cursor = None
         self.capture = None
         self.label = None
         self.label_output = None
+        self.command = None
 
         self.cursor_size = 5
         self.init_cursor_x = 280
@@ -24,7 +25,7 @@ class Booth:
         self.boxes = []
 
         self.init_capture()
-        self.init_model(model, device)
+        self.init_model(model)
         self.init_tk()
         self.update()
 
@@ -33,13 +34,12 @@ class Booth:
         self.root = tk.Tk()
         self.root.geometry("640x480")
         self.root.title("EEG Motor Imagery")
-        self.root.bind("<Key>", self.update_cursor)
-        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.root.bind("<Key>", self.update_cursor_arrow_keys)
         self.canvas = tk.Canvas(self.root, width=640, height=480)
         self.canvas.pack()
-        self.label_output = tk.StringVar()
         self.draw_cursor()
         self.draw_boxes(3)
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
         self.root.mainloop()
 
     def draw_boxes(self, num_boxes):
@@ -64,10 +64,7 @@ class Booth:
 
         return self.cursor
 
-    def update_cursor(self, event):
-
-        command = self.model.current_output
-
+    def update_cursor_arrow_keys(self, event):
         if event.keysym == "Up":
             self.cursor_y -= 10
         elif event.keysym == "Left":
@@ -77,11 +74,12 @@ class Booth:
         elif event.keysym == "Down":
             self.cursor_y += 10
 
-        self.label_output = event.keysym
-        print(command)
-        # print(self.label_output)
         self.draw_cursor()
         self.check_collision()
+
+    def update_cursor_eeg(self):
+        self.command = self.model.read()
+        print(self.command)
 
     def check_collision(self):
         cursor_bbox = self.canvas.bbox(self.cursor)
@@ -93,7 +91,7 @@ class Booth:
                 print("Collision detected!")
                 self.reset_cursor()
                 self.clear_boxes()
-                self.draw_boxes(3)  # TODO: Function to receive object count
+                self.draw_boxes(3)
                 break
 
     @staticmethod
@@ -118,9 +116,9 @@ class Booth:
             self.canvas.delete(box_id)
         self.boxes = []
 
-    def init_model(self, model, device):
+    def init_model(self, model):
         print("[!] Model initialization")
-        self.model = EEGModelThread(self.capture, model, device)
+        self.model = EEGModelThread(self.capture, model)
         self.model.start()
 
     def init_capture(self):
@@ -129,7 +127,7 @@ class Booth:
         self.capture.start()
 
     def update(self):
-        pass
+        self.update_cursor_eeg()
 
     def on_close(self):
         print("Ending processes")
