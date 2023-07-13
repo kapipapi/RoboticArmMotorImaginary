@@ -1,5 +1,9 @@
 # Description
 
+# Requirements
+- python 3.8
+- tested on ubuntu 18.04
+
 # Prepare for work
 ### 1. Clone this repository
 ```bash
@@ -15,4 +19,10 @@ git clone git@github.com:kapipapi/RoboticArmMotorImaginary.git
 ```bash
 pip install -r requirements.txt
 ```
-### 5. Launch `jupyter-lab`
+### 5. Install package locally
+```
+pip install -e .
+```
+
+### 6 . Install package locally
+Launch `jupyter-lab`

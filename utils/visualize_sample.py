@@ -3,7 +3,7 @@ import numpy as np
 
 from utils.converter import FileConverter
 
-data = FileConverter().preconvert_file("/home/administrator/Documents/dataset-eeg/sesja1_pawel_zaciskanie_dloni.bdf")
+data = FileConverter().preconvert_file("../dataset/kapi/kapi_1_4signals.bdf")
 
 print("converted")
 

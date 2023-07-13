@@ -24,11 +24,11 @@ class Compose:
 
 
 class EEGDataset(Dataset):
-
-    def __init__(self, root_dir, transform=None):
+    def __init__(self, root_dir, transform=None, n_classes=3):
         self.transform = transform
         self.paths = load_paths(root_dir)
-
+        self.n_classes = n_classes
+        
     def __len__(self):
         return len(self.paths)
 
@@ -38,7 +38,7 @@ class EEGDataset(Dataset):
         signal = data["impulse_signal"]
         label = data["impulse_index"] - 1
         sample_rate = int(data["sample_rate"])
-
+        
         # shorten slice to even timing (4 second sample)
         end = sample_rate * 4
 
@@ -55,5 +55,5 @@ class EEGDataset(Dataset):
 
         if self.transform:
             signal = self.transform(signal)
-
-        return np.array(signal), label
+        
+        return np.array(signal[:16]), label
