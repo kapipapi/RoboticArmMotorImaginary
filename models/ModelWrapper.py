@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import torch.nn.functional as F
 import pytorch_lightning as pl
 
-from torch.nn.functional import binary_cross_entropy, one_hot
+from torch.nn.functional import cross_entropy, one_hot
 
 from torch.optim import Adam
 
@@ -38,7 +38,11 @@ class ModelWrapper(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         data, label_n = batch
+<<<<<<< Updated upstream
 
+=======
+ 
+>>>>>>> Stashed changes
         # get predictions
         output = self(data)
 
@@ -46,7 +50,7 @@ class ModelWrapper(pl.LightningModule):
         label = one_hot(label_n, num_classes=self.n_classes)
 
         # calculate loss
-        loss = binary_cross_entropy(label.to(torch.float32), output)
+        loss = cross_entropy(label.to(torch.float32), output)
         self.log("train_loss", loss, on_step=True)
 
         # calculate f1 score
@@ -67,7 +71,7 @@ class ModelWrapper(pl.LightningModule):
         label = one_hot(label_n, num_classes=self.n_classes)
 
         # calculate loss
-        loss = binary_cross_entropy(label.to(torch.float32), output)
+        loss = cross_entropy(label.to(torch.float32), output)
         self.log("test_loss", loss)
 
         # calculate accuracy
@@ -88,7 +92,7 @@ class ModelWrapper(pl.LightningModule):
         label = one_hot(label_n, num_classes=self.n_classes)
 
         # calculate loss
-        loss = binary_cross_entropy(label.to(torch.float32), output)
+        loss = cross_entropy(label.to(torch.float32), output)
         self.log("validation_loss", loss)
 
         # calculate accuracy

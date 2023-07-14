@@ -4,7 +4,7 @@ import numpy as np
 
 class FileConverter:
     DATASET_FREQ = 2048
-    CHANNELS_IN_FILE = 47 + 1  # with trigger
+    CHANNELS_IN_FILE = 16est_acc': 0.0670103058218956, + 1  # with trigger
     HEADER_LENGTH = 256 * (CHANNELS_IN_FILE + 1)
 
     impulses_names = ["BREAK", "LEFT", "RIGHT", "RELAX", "FEET"]
