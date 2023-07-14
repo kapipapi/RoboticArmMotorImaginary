@@ -25,7 +25,10 @@ class ModelWrapper(pl.LightningModule):
         self.accuracy_test = torchmetrics.Precision(task="multiclass", average='macro', num_classes=n_classes)
         self.accuracy_val = torchmetrics.Precision(task="multiclass", average='macro', num_classes=n_classes)
 
-        self.f1 = torchmetrics.F1Score(task="multiclass", num_classes=n_classes)
+        self.f1_train = torchmetrics.F1Score(task="multiclass", num_classes=n_classes)
+        self.f1_test = torchmetrics.F1Score(task="multiclass", num_classes=n_classes)
+        self.f1_val = torchmetrics.F1Score(task="multiclass", num_classes=n_classes)
+        
         self.confmat = torchmetrics.ConfusionMatrix(task="multiclass", num_classes=n_classes)
         self.roc = torchmetrics.ROC(task='multilabel', num_labels=n_classes)
 
@@ -53,36 +56,10 @@ class ModelWrapper(pl.LightningModule):
         self.log("train_loss", loss, on_step=True)
 
         # calculate f1 score
-        self.f1.update(output, label_n)
-        self.log('train_f1', self.f1)
-
-        self.confmat.update(output, label_n)
+        self.f1_train.update(output, label_n)
+        self.log('train_f1', self.f1_train)
 
         return loss
-
-    def test_step(self, batch, batch_idx):
-        data, label_n = batch
-
-        # convert to float
-        data = data.to(torch.float)
-
-        # get predictions
-        output = self(data)
-
-        # convert for loss calculation
-        label = one_hot(label_n, num_classes=self.n_classes)
-
-        # calculate loss
-        loss = cross_entropy(label.to(torch.float32), output)
-        self.log("test_loss", loss)
-
-        # calculate accuracy
-        self.accuracy_test.update(output, label_n)
-        self.log('test_acc', self.accuracy_test)
-
-        # calculate f1 score
-        self.f1.update(output, label_n)
-        self.log('train_f1', self.f1)
 
     def validation_step(self, batch, batch_idx):
         data, label_n = batch
@@ -105,10 +82,36 @@ class ModelWrapper(pl.LightningModule):
         self.log('validation_acc', self.accuracy_val)
 
         # calculate f1 score
-        self.f1.update(output, label_n)
-        self.log('train_f1', self.f1, on_epoch=True)
+        self.f1_val.update(output, label_n)
+        self.log('validation_f1', self.f1_val, on_epoch=True)
 
-    def on_train_epoch_end(self):
+    def test_step(self, batch, batch_idx):
+        data, label_n = batch
+
+        # convert to float
+        data = data.to(torch.float)
+
+        # get predictions
+        output = self(data)
+
+        # convert for loss calculation
+        label = one_hot(label_n, num_classes=self.n_classes)
+
+        # calculate loss
+        loss = cross_entropy(label.to(torch.float32), output)
+        self.log("test_loss", loss)
+
+        # calculate accuracy
+        self.accuracy_test.update(output, label_n)
+        self.log('test_acc', self.accuracy_test)
+
+        # calculate f1 score
+        self.f1_test.update(output, label_n)
+        self.log('test_f1', self.f1_test)
+
+        self.confmat.update(output, label_n)
+
+    def on_test_epoch_end(self):
         cm = self.confmat.compute().detach().cpu().numpy()
 
         import seaborn as sn
@@ -117,9 +120,11 @@ class ModelWrapper(pl.LightningModule):
         matplotlib.use('agg')
         import matplotlib.pyplot as plt
 
+        labels = ["LEFT", "RIGHT", "RELAX", "FEET"][:self.n_classes]
+
         fig, ax1 = plt.subplots(1)
-        df_cm = pd.DataFrame(cm, index = [i for i in "".join([str(x) for x in range(self.n_classes)])],
-                          columns = [i for i in "".join([str(x) for x in range(self.n_classes)])])
+        df_cm = pd.DataFrame(cm, index = labels,
+                          columns = labels)
         sn.heatmap(df_cm, annot=True, ax=ax1)
 
         # add the confusion matrix to TensorBoard

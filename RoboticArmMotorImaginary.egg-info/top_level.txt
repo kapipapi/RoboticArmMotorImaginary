@@ -1,3 +1,2 @@
-isaac_simulation
 models
 utils
