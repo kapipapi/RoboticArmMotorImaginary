@@ -38,11 +38,7 @@ class ModelWrapper(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         data, label_n = batch
-<<<<<<< Updated upstream
 
-=======
- 
->>>>>>> Stashed changes
         # get predictions
         output = self(data)
 
