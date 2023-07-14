@@ -1,103 +1,51 @@
 import os
 import numpy as np
+from biosemipy import bdf
 
 
-class FileConverter:
-    DATASET_FREQ = 2048
+def split_file(filename, output_dir="../dataset"):
+    impulses_names = ["BREAK", "LEFT", "RIGHT", "RELAX", "FEET"]
+
+    # load file
+    file = bdf.BDF(filename)
     
-    def __init__(self, channels=16):
-        self.DATASET_FREQ = 2048
-        self.CHANNELS_IN_FILE = channels + 1  # with trigger
-        self.HEADER_LENGTH = 256 * (self.CHANNELS_IN_FILE + 1)
-    
-        self.impulses_names = ["BREAK", "LEFT", "RIGHT", "RELAX", "FEET"]
+    # select 16 channels
+    file.select_channels(['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'A12', 'A13', 'A14', 'A15', 'A16'])
 
-    def preconvert_file(self, i_file_path):
-        file_len_bytes = os.stat(i_file_path).st_size
-        file_len_bytes_headless = file_len_bytes - self.HEADER_LENGTH
+    trigger_idx = np.array(np.log2(file.trig['val'] - 255) - 8, dtype=int)
 
-        channel_sections_count = file_len_bytes_headless // (self.CHANNELS_IN_FILE * self.DATASET_FREQ * 3)
+    # create save filepath
+    bn = os.path.basename(filename)[:-4]
+    savepath = os.path.join(output_dir, bn)
 
-        with open(i_file_path, 'rb') as f:
-            data = f.read()
-        data = np.frombuffer(data[self.HEADER_LENGTH:], dtype='<u1')
+    if not os.path.exists(savepath):
+        os.makedirs(savepath)
 
-        samples = np.ndarray((self.CHANNELS_IN_FILE - 1,
-                              self.DATASET_FREQ * channel_sections_count, 3), dtype='<u1')
+    print("saving to:", savepath)
 
-        triggers = np.ndarray((1, self.DATASET_FREQ * channel_sections_count, 3), dtype='<u1')
+    # iterate through all triggers and slice data
+    current_signal_id = 0
+    for i in range(len(file.trig['idx'])-1):
+        start = file.trig['idx'][i]
+        end = file.trig['idx'][i+1]
+        
+        type_of_slice = trigger_idx[i]
 
-        for sec in range(channel_sections_count):
-            if sec % 50 == 0:
-                print(sec + 1, "/", channel_sections_count, " " * 100, end="\r")
-            for ch in range(self.CHANNELS_IN_FILE):
-                for sam in range(self.DATASET_FREQ):
-                    beg = sec * self.CHANNELS_IN_FILE * self.DATASET_FREQ * 3 + ch * self.DATASET_FREQ * 3 + sam * 3
-                    if ch != self.CHANNELS_IN_FILE - 1:
-                        samples[ch, sec * self.DATASET_FREQ + sam, :] = data[beg:beg + 3]
-                    else:
-                        triggers[0, sec * self.DATASET_FREQ + sam, :] = data[beg:beg + 3]
+        if type_of_slice > 0:
+            current_slice = file.data[:,start:end]
 
-        raw_data = samples[:, :, 0].astype("int32") + samples[:, :, 1].astype("int32") * 256 + samples[:, :, 2].astype(
-            "int32") * 256 * 256
-        raw_data[raw_data > pow(2, 23)] -= pow(2, 24)
+            numpy_content = {
+                "impulse_name": impulses_names[type_of_slice],
+                "impulse_index": type_of_slice,
+                "impulse_signal": current_slice,
+                "sample_rate": file.freq,
+            }
 
-        markers = triggers[0, :, 1]
-
-        raw_data = raw_data.astype('float32')
-        raw_data -= 0.55 * (raw_data[6, :] + raw_data[8, :])  # referencing the signal
-
-        return np.array(raw_data), markers
-
-    def split_file(self, filename, output_dir="../dataset"):
-        signals, markers = self.preconvert_file(filename)
-
-        all_slices = []
-        type_of_slice = None
-        slicing = False
-        slice_start_index = None
-        for i in range(len(markers)):
-            m = markers[i]
-
-            if not slicing:
-                if m > 1:
-                    slicing = True
-                    slice_start_index = i
-                    type_of_slice = int(np.log2(m))
-                else:
-                      continue
-
-            else:
-                if m == 1:
-                    current_slice = signals[:, slice_start_index:i]
-
-                    all_slices.append({
-                        "impulse_name": self.impulses_names[type_of_slice],
-                        "impulse_index": type_of_slice,
-                        "impulse_signal": current_slice,
-                        "sample_rate": FileConverter.DATASET_FREQ,
-                    })
-
-                    slicing = False
-                    slice_start_index = None
-                    type_of_slice = None
-                else:
-                    continue
-
-        bn = os.path.basename(filename)[:-4]
-        savepath = os.path.join(output_dir, bn)
-
-        if not os.path.exists(savepath):
-            os.makedirs(savepath)
-            
-        for i, impulse in enumerate(all_slices):
-            data_filename = os.path.join(savepath, f"{i}.npy")
-            np.save(data_filename, impulse)
+            data_filename = os.path.join(savepath, f"{current_signal_id}.npy")
+            np.save(data_filename, numpy_content)
+            current_signal_id += 1
 
 
 if __name__ == '__main__':
-    converter = FileConverter()
-    for i in range(1, 5):
-        converter.split_file(f"../dataset/sesja{i}_pawel_zaciskanie_dloni.bdf")
-        print(f"Finished converting file number {i}")
-
+    split_file(f"../dataset/pawel/sesja1_pawel_zaciskanie_dloni.bdf")
+    print(f"Finished converting file number 1")
