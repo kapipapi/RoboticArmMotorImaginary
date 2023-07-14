@@ -18,7 +18,7 @@ class EEGInception(ModelWrapper):
     def __init__(self, input_time=4000, fs=512, ncha=16, filters_per_branch=8,
                  scales_time=(500, 250, 125), dropout_rate=0.25,
                  activation=nn.ELU(inplace=True), n_classes=3):
-        super(EEGInception, self).__init__()
+        super(EEGInception, self).__init__(n_classes)
 
         input_samples = int(input_time * fs / 1000)
         scales_samples = [int(s * fs / 1000) for s in scales_time]

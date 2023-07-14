@@ -7,6 +7,12 @@ RoboticArmMotorImaginary.egg-info/top_level.txt
 isaac_simulation/__init__.py
 isaac_simulation/hello_world.py
 isaac_simulation/hello_world_extension.py
+models/DeepConvNet.py
+models/EEGInception.py
+models/EEGNet.py
+models/ModelWrapper.py
+models/Transformer.py
+models/__init__.py
 utils/__init__.py
 utils/converter.py
 utils/preprocessing.py
