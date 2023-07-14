@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 from torch.optim.lr_scheduler import StepLR
-from dataset import EEGDataset
+from utils.dataset import EEGDataset
 
 
 def train(args, model, device, train_loader, optimizer, criterion, epoch):

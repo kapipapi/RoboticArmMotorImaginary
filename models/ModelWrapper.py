@@ -39,6 +39,9 @@ class ModelWrapper(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         data, label_n = batch
 
+        # convert to float
+        data = data.to(torch.float)
+
         # get predictions
         output = self(data)
 
@@ -60,6 +63,9 @@ class ModelWrapper(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         data, label_n = batch
 
+        # convert to float
+        data = data.to(torch.float)
+
         # get predictions
         output = self(data)
 
@@ -80,6 +86,9 @@ class ModelWrapper(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         data, label_n = batch
+
+        # convert to float
+        data = data.to(torch.float)
 
         # get predictions
         output = self(data)
