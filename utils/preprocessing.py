@@ -9,7 +9,7 @@ from scipy.signal import butter, buttord, lfilter, resample
 
 class EEGDataProcessor:
     DATASET_FREQ = 2048
-    DOWNSAMPLED_FREQ = 128
+    DOWNSAMPLED_FREQ = 512
 
     CLASSES_COUNT = 3
 
@@ -57,7 +57,8 @@ class EEGDataProcessor:
             buffer[c] = buffer[c] - np.mean(buffer[c])
         return buffer
 
-    def downsample(self, buffer, freq=DOWNSAMPLED_FREQ):
+    def downsample(self, buffer):
+        freq = self.DOWNSAMPLED_FREQ
         sampling_factor = self.DATASET_FREQ / freq
         downsampled_signal = resample(buffer, int(buffer.shape[-1] / sampling_factor), axis=-1)
         return downsampled_signal

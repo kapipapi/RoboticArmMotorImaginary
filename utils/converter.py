@@ -4,10 +4,10 @@ import numpy as np
 
 class FileConverter:
     DATASET_FREQ = 2048
-    CHANNELS_IN_FILE = 16 + 1  # with trigger
+    CHANNELS_IN_FILE = 47 + 1  # with trigger
     HEADER_LENGTH = 256 * (CHANNELS_IN_FILE + 1)
 
-    impulses_names = ["BREAK", "LEFT", "RIGHT", "RELAX"]
+    impulses_names = ["BREAK", "LEFT", "RIGHT", "RELAX", "FEET"]
 
     def preconvert_file(self, i_file_path):
         file_len_bytes = os.stat(i_file_path).st_size
@@ -46,7 +46,7 @@ class FileConverter:
 
         return np.array(raw_data), markers
 
-    def split_file(self, filename):
+    def split_file(self, filename, output_dir="../dataset"):
         signals, markers = self.preconvert_file(filename)
 
         all_slices = []
@@ -54,9 +54,6 @@ class FileConverter:
         slicing = False
         slice_start_index = None
         for i in range(len(markers)):
-            if i % 1000 == 0:
-                print(i + 1, "/", len(markers), " " * 100, end="\r")
-
             m = markers[i]
 
             if not slicing:
@@ -85,11 +82,11 @@ class FileConverter:
                     continue
 
         bn = os.path.basename(filename)[:-4]
-        savepath = os.path.join("dataset", bn)
+        savepath = os.path.join(output_dir, bn)
 
         if not os.path.exists(savepath):
             os.makedirs(savepath)
-
+            
         for i, impulse in enumerate(all_slices):
             data_filename = os.path.join(savepath, f"{i}.npy")
             np.save(data_filename, impulse)
