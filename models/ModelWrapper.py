@@ -55,9 +55,13 @@ class ModelWrapper(pl.LightningModule):
         loss = cross_entropy(label.to(torch.float32), output)
         self.log("train_loss", loss, on_step=True)
 
+        # calculate accuracy
+        self.accuracy_train.update(output, label_n)
+        self.log('train_acc', self.accuracy_train)
+
         # calculate f1 score
         self.f1_train.update(output, label_n)
-        self.log('train_f1', self.f1_train)
+        self.log('train_f1', self.f1_train, on_epoch=True)
 
         return loss
 
