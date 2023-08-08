@@ -10,7 +10,7 @@ from einops.layers.torch import Rearrange, Reduce
 from models.ModelWrapper import ModelWrapper
 
 
-class PatchEmbedding(ModelWrapper):
+class PatchEmbedding(pl.LightningModule):
     def __init__(self, emb_size):
         # self.patch_size = patch_size
         super().__init__()
