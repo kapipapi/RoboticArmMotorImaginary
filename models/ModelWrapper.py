@@ -6,7 +6,7 @@ import matplotlib
 
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
-import pytorch_lightning as pl
+import lightning.pytorch as pl
 
 from torch.nn.functional import cross_entropy, one_hot
 
