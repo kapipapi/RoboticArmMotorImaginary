@@ -208,9 +208,9 @@ class channel_attention(pl.LightningModule):
         return out
 
 
-class Transformer(pl.LightningModule):
-    def __init__(self):
-        super(Transformer, self).__init__()
+class Transformer(ModelWrapper):
+    def __init__(self, n_classes=3):
+        super(Transformer, self).__init__(n_classes=3)
         self.batch_size = 32
         self.n_epochs = 1000
         self.img_height = 22
