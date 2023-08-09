@@ -57,7 +57,7 @@ class ModelWrapper(pl.LightningModule):
 
         # calculate accuracy
         self.accuracy_train.update(output, label_n)
-        self.log('train_acc', self.accuracy_train)
+        self.log('train_acc', self.accuracy_train, on_epoch=True)
 
         # calculate f1 score
         self.f1_train.update(output, label_n)
