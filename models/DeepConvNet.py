@@ -35,7 +35,7 @@ class DeepConvNet(ModelWrapper):
             nn.Dropout(p=0.47),
 
             nn.Flatten(),
-            nn.Linear(5600, n_output, bias=True)
+            nn.Linear(5600, n_classes, bias=True)
         )
 
     def forward(self, x):
