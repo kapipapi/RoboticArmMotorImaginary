@@ -6,8 +6,8 @@ from models.ModelWrapper import ModelWrapper
 
 
 class DeepConvNet(ModelWrapper):
-    def __init__(self, n_output):
-        super().__init__()
+    def __init__(self, n_classes=3):
+        super(DeepConvNet, self).__init__(n_classes)
         self.model = nn.Sequential(
             nn.Conv2d(1, 25, kernel_size=(1, 5), bias=False),
             nn.Conv2d(25, 25, kernel_size=(16, 1), bias=False),
