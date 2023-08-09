@@ -87,8 +87,11 @@ class EEGInception(ModelWrapper):
         )
 
         self.dense = nn.Sequential(
-            # nn.Linear(4 * 1 * 6, n_classes), # to zmieniłem bo sie rozjeżdżało
-            nn.Linear(384, n_classes),
+            # 2048 samples - 384
+            # 1024 - 192
+            # 512 - 96
+            # todo: calculate from 'fs'
+            nn.Linear(96, n_classes),
             nn.Softmax(1)
         )
 
