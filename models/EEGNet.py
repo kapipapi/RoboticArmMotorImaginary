@@ -5,7 +5,7 @@ from models.ModelWrapper import ModelWrapper
 
 
 class EEGNet(ModelWrapper):
-    def __init__(self, n_classes=3):
+    def __init__(self, n_classes=3, time_samples=512):
         super(EEGNet, self).__init__(n_classes)
         
         # Layer 1
@@ -31,7 +31,7 @@ class EEGNet(ModelWrapper):
         
         # FC Layer
         # NOTE: This dimension will depend on the number of timestamps per sample in your data. 
-        self.fc1 = nn.Linear(1024, n_classes)
+        self.fc1 = nn.Linear(time_samples//2, n_classes)
         
     def forward(self, x):
         # Layer 1
