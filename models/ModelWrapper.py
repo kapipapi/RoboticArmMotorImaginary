@@ -116,20 +116,7 @@ class ModelWrapper(pl.LightningModule):
         self.confmat.update(output, label_n)
 
     def on_test_epoch_end(self):
-        cm = self.confmat.compute().detach().cpu().numpy()
-
-        import seaborn as sn
-        import pandas as pd
-        import matplotlib
-        matplotlib.use('agg')
-        import matplotlib.pyplot as plt
-
-        labels = ["LEFT", "RIGHT", "RELAX", "FEET"][:self.n_classes]
-
-        fig, ax1 = plt.subplots(1)
-        df_cm = pd.DataFrame(cm, index = labels,
-                          columns = labels)
-        sn.heatmap(df_cm, annot=True, ax=ax1)
+        fig, _ = self.confmat.plot()
 
         # add the confusion matrix to TensorBoard
         self.logger.experiment.add_figure("Confusion Matrix", fig, self.current_epoch)
