@@ -116,7 +116,30 @@ class ModelWrapper(pl.LightningModule):
         self.confmat.update(output, label_n)
 
     def on_test_epoch_end(self):
-        fig, _ = self.confmat.plot()
+        fig, ax = self.confmat.plot()
+
+        # Assuming you have a list of class names
+        class_names = ["LEFT", "RIGHT", "RELAX", "FEET"][:self.n_classes]  # Modify this list as per your classes
+
+        # Set the x and y axis labels
+        ax.set_xticks(np.arange(len(class_names)))
+        ax.set_yticks(np.arange(len(class_names)))
+        ax.set_xticklabels(class_names)
+        ax.set_yticklabels(class_names)
+
+        # Set x and y axis titles
+        ax.set_xlabel('Predicted')
+        ax.set_ylabel('True')
+
+        # Set the title for the confusion matrix
+        ax.set_title('Confusion Matrix')
+
+        # Display the grid lines
+        ax.grid(False)
+
+        # Rotate the x tick labels for better visibility if needed
+        plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+
 
         # add the confusion matrix to TensorBoard
         self.logger.experiment.add_figure("Confusion Matrix", fig, self.current_epoch)
