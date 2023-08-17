@@ -8,7 +8,7 @@ def load_paths(root_dir, n_classes):
     for root, _, files in os.walk(root_dir):
         for file in files:
             if file.endswith(".npy"):
-                data = np.load(file, allow_pickle=True).item()
+                data = np.load(os.path.join(root, file), allow_pickle=True).item()
                 label = data["impulse_index"] - 1
                 if label >= n_classes:
                     continue
