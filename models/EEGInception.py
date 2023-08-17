@@ -91,7 +91,7 @@ class EEGInception(ModelWrapper):
             # 1024 - 192
             # 512 - 96
             # todo: calculate from 'fs'
-            nn.Linear(192, n_classes),
+            nn.Linear(96, n_classes),
             nn.Softmax(1)
         )
 
