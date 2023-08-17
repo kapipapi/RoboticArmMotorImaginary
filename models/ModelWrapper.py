@@ -6,7 +6,8 @@ import matplotlib
 
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
-import pytorch_lightning as pl
+import lightning.pytorch as pl
+import numpy as np
 
 from torch.nn.functional import cross_entropy, one_hot
 
@@ -55,9 +56,13 @@ class ModelWrapper(pl.LightningModule):
         loss = cross_entropy(label.to(torch.float32), output)
         self.log("train_loss", loss, on_step=True)
 
+        # calculate accuracy
+        self.accuracy_train.update(output, label_n)
+        self.log('train_acc', self.accuracy_train, on_epoch=True)
+
         # calculate f1 score
         self.f1_train.update(output, label_n)
-        self.log('train_f1', self.f1_train)
+        self.log('train_f1', self.f1_train, on_epoch=True)
 
         return loss
 
@@ -79,7 +84,7 @@ class ModelWrapper(pl.LightningModule):
 
         # calculate accuracy
         self.accuracy_val.update(output, label_n)
-        self.log('validation_acc', self.accuracy_val)
+        self.log('validation_acc', self.accuracy_val, on_epoch=True)
 
         # calculate f1 score
         self.f1_val.update(output, label_n)
@@ -112,20 +117,30 @@ class ModelWrapper(pl.LightningModule):
         self.confmat.update(output, label_n)
 
     def on_test_epoch_end(self):
-        cm = self.confmat.compute().detach().cpu().numpy()
+        fig, ax = self.confmat.plot()
 
-        import seaborn as sn
-        import pandas as pd
-        import matplotlib
-        matplotlib.use('agg')
-        import matplotlib.pyplot as plt
+        # Assuming you have a list of class names
+        class_names = ["LEFT", "RIGHT", "RELAX", "FEET"][:self.n_classes]  # Modify this list as per your classes
 
-        labels = ["LEFT", "RIGHT", "RELAX", "FEET"][:self.n_classes]
+        # Set the x and y axis labels
+        ax.set_xticks(np.arange(len(class_names)))
+        ax.set_yticks(np.arange(len(class_names)))
+        ax.set_xticklabels(class_names)
+        ax.set_yticklabels(class_names)
 
-        fig, ax1 = plt.subplots(1)
-        df_cm = pd.DataFrame(cm, index = labels,
-                          columns = labels)
-        sn.heatmap(df_cm, annot=True, ax=ax1)
+        # Set x and y axis titles
+        ax.set_xlabel('Predicted')
+        ax.set_ylabel('True')
+
+        # Set the title for the confusion matrix
+        ax.set_title('Confusion Matrix')
+
+        # Display the grid lines
+        ax.grid(False)
+
+        # Rotate the x tick labels for better visibility if needed
+        plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+
 
         # add the confusion matrix to TensorBoard
         self.logger.experiment.add_figure("Confusion Matrix", fig, self.current_epoch)
