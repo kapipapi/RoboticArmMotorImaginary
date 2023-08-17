@@ -38,22 +38,26 @@ class EEGDataset(Dataset):
         signal = data["impulse_signal"]
         label = data["impulse_index"] - 1
         sample_rate = int(data["sample_rate"])
-        
-        # shorten slice to even timing (4 second sample)
-        end = sample_rate * 4
 
-        # make sure signal is correct length
-        if signal.shape[1] >= end:
-            signal = signal[:, :end]
+        if label >= self.n_classes:
+            return
+
         else:
-            new_signal = []
-            for i, s in enumerate(signal):
-                new_signal.append(np.pad(s, (0, end - signal.shape[1]), 'mean'))
-            signal = np.array(new_signal)
+            # shorten slice to even timing (4 second sample)
+            end = sample_rate * 4
 
-        assert signal.shape[1] == end
+            # make sure signal is correct length
+            if signal.shape[1] >= end:
+                signal = signal[:, :end]
+            else:
+                new_signal = []
+                for i, s in enumerate(signal):
+                    new_signal.append(np.pad(s, (0, end - signal.shape[1]), 'mean'))
+                signal = np.array(new_signal)
 
-        if self.transform:
-            signal = self.transform(signal)
-        
-        return np.array(signal[:16]), label
+            assert signal.shape[1] == end
+
+            if self.transform:
+                signal = self.transform(signal)
+
+            return np.array(signal[:16]), label
