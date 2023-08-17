@@ -28,7 +28,7 @@ class EEGDataset(Dataset):
         self.transform = transform
         self.paths = load_paths(root_dir)
         self.n_classes = n_classes
-        
+
     def __len__(self):
         return len(self.paths)
 
@@ -39,25 +39,24 @@ class EEGDataset(Dataset):
         label = data["impulse_index"] - 1
         sample_rate = int(data["sample_rate"])
 
-        if label >= self.n_classes:
-            return
+        # if label >= self.n_classes:
+        #     return
 
+        # shorten slice to even timing (4 second sample)
+        end = sample_rate * 4
+
+        # make sure signal is correct length
+        if signal.shape[1] >= end:
+            signal = signal[:, :end]
         else:
-            # shorten slice to even timing (4 second sample)
-            end = sample_rate * 4
+            new_signal = []
+            for i, s in enumerate(signal):
+                new_signal.append(np.pad(s, (0, end - signal.shape[1]), 'mean'))
+            signal = np.array(new_signal)
 
-            # make sure signal is correct length
-            if signal.shape[1] >= end:
-                signal = signal[:, :end]
-            else:
-                new_signal = []
-                for i, s in enumerate(signal):
-                    new_signal.append(np.pad(s, (0, end - signal.shape[1]), 'mean'))
-                signal = np.array(new_signal)
+        assert signal.shape[1] == end
 
-            assert signal.shape[1] == end
+        if self.transform:
+            signal = self.transform(signal)
 
-            if self.transform:
-                signal = self.transform(signal)
-
-            return np.array(signal[:16]), label
+        return np.array(signal[:16]), label
