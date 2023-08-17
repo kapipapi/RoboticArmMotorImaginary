@@ -3,13 +3,17 @@ import numpy as np
 from torch.utils.data import Dataset
 
 
-def load_paths(root_dir):
+def load_paths(root_dir, n_classes):
     paths = []
     for root, _, files in os.walk(root_dir):
         for file in files:
             if file.endswith(".npy"):
-                paths.append(os.path.join(root, file))
-
+                data = np.load(file, allow_pickle=True).item()
+                label = data["impulse_index"] - 1
+                if label >= n_classes:
+                    continue
+                else:
+                    paths.append(os.path.join(root, file))
     return paths
 
 
@@ -26,8 +30,8 @@ class Compose:
 class EEGDataset(Dataset):
     def __init__(self, root_dir, transform=None, n_classes=3):
         self.transform = transform
-        self.paths = load_paths(root_dir)
         self.n_classes = n_classes
+        self.paths = load_paths(root_dir, self.n_classes)
 
     def __len__(self):
         return len(self.paths)
