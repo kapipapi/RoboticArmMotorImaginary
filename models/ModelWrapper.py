@@ -53,10 +53,7 @@ class ModelWrapper(pl.LightningModule):
         label = one_hot(label_n, num_classes=self.n_classes)
 
         # calculate loss
-        if self.n_classes == 3:
-            loss = cross_entropy(label.to(torch.float32), output, ignore_index=3)
-        else:
-            loss = cross_entropy(label.to(torch.float32), output)
+        loss = cross_entropy(label.to(torch.float32), output)
         self.log("train_loss", loss, on_step=True)
 
         # calculate accuracy
@@ -82,10 +79,7 @@ class ModelWrapper(pl.LightningModule):
         label = one_hot(label_n, num_classes=self.n_classes)
 
         # calculate loss
-        if self.n_classes == 3:
-            loss = cross_entropy(label.to(torch.float32), output, ignore_index=3)
-        else:
-            loss = cross_entropy(label.to(torch.float32), output)
+        loss = cross_entropy(label.to(torch.float32), output)
         self.log("validation_loss", loss)
 
         # calculate accuracy
@@ -109,10 +103,7 @@ class ModelWrapper(pl.LightningModule):
         label = one_hot(label_n, num_classes=self.n_classes)
 
         # calculate loss
-        if self.n_classes == 3:
-            loss = cross_entropy(label.to(torch.float32), output, ignore_index=3)
-        else:
-            loss = cross_entropy(label.to(torch.float32), output)
+        loss = cross_entropy(label.to(torch.float32), output)
         self.log("test_loss", loss)
 
         # calculate accuracy
