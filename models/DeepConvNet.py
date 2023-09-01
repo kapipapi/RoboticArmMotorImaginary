@@ -34,7 +34,7 @@ class DeepConvNet(ModelWrapper):
             nn.MaxPool2d(kernel_size=(1,3)),
 
             nn.Flatten(),
-            nn.Linear(800, n_classes)
+            nn.Linear(2000, n_classes)
         )
 
     def forward(self, x):

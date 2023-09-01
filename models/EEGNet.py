@@ -5,7 +5,7 @@ from models.ModelWrapper import ModelWrapper
 
 
 class EEGNet(ModelWrapper):
-    def __init__(self, n_classes=3, time_samples=512):
+    def __init__(self, n_classes=3, time_samples=1024):
         super(EEGNet, self).__init__(n_classes)
         
         # Layer 1
