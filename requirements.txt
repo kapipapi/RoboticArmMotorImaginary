@@ -2,7 +2,7 @@ jupyterlab
 numpy
 torch>=2.0.0
 argparse
-pytorch-lightning
+lightning
 matplotlib
 scipy
 scikit-learn
