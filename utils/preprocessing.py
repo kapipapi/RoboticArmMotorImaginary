@@ -13,21 +13,11 @@ class EEGDataProcessor:
 
     CLASSES_COUNT = 3
 
-    HIGH_PASS_BOTTOM = 3    # [Hz]
-    HIGH_PASS_TOP = 6       # [Hz]
-
-    LOW_PASS_BOTTOM = 30    # [Hz]
-    LOW_PASS_TOP = 60       # [Hz]
-
-    def __init__(self):
-        N, Wn = buttord(
-            [self.HIGH_PASS_TOP,    self.LOW_PASS_TOP], 
-            [self.HIGH_PASS_BOTTOM, self.HIGH_PASS_BOTTOM], 
-            3, 
-            40, 
-            False
-        )
-        self.b, self.a = butter(N, Wn, 'band', True)
+    def __init__(self, lowcut=0.5, highcut=40.0, order=3.0):
+        nyquist = 0.5 * self.DATASET_FREQ
+        low = lowcut / nyquist
+        high = highcut / nyquist
+        self.b, self.a = butter(order, [low, high], btype='band')
 
     def forward(self, x, mean):
         x = self.remove_dc_component(x, mean)            # TODO: Fix function
