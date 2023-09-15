@@ -4,31 +4,30 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from scipy.signal import butter, buttord, lfilter, resample
+from scipy.signal import butter, buttord, filtfilt, resample
 
 
 class EEGDataProcessor:
     DATASET_FREQ = 2048
-    DOWNSAMPLED_FREQ = 512
+    DOWNSAMPLED_FREQ = 256
 
     CLASSES_COUNT = 3
 
-    LOW_PASS_FREQ_PB = 30
-    LOW_PASS_FREQ_SB = 60
-    HIGH_PASS_FREQ_PB = 6
-    HIGH_PASS_FREQ_SB = 3
+    HIGH_PASS_BOTTOM = 3    # [Hz]
+    HIGH_PASS_TOP = 6       # [Hz]
 
-    MAX_LOSS_PB = 2
-    MIN_ATT_SB = 6
+    LOW_PASS_BOTTOM = 30    # [Hz]
+    LOW_PASS_TOP = 60       # [Hz]
 
     def __init__(self):
-        f_ord, wn = buttord(self.LOW_PASS_FREQ_PB, self.LOW_PASS_FREQ_SB, self.MAX_LOSS_PB, self.MIN_ATT_SB, False,
-                            self.DATASET_FREQ)
-        self.low_b, self.low_a, *args = butter(f_ord, wn, 'lowpass', False, 'ba', self.DATASET_FREQ)
-
-        f_ord, wn = buttord(self.HIGH_PASS_FREQ_PB, self.HIGH_PASS_FREQ_SB, self.MAX_LOSS_PB, self.MIN_ATT_SB, False,
-                            self.DATASET_FREQ)
-        self.high_b, self.high_a, *args = butter(f_ord, wn, 'highpass', False, 'ba', self.DATASET_FREQ)
+        N, Wn = buttord(
+            [self.HIGH_PASS_TOP,    self.LOW_PASS_TOP], 
+            [self.HIGH_PASS_BOTTOM, self.HIGH_PASS_BOTTOM], 
+            3, 
+            40, 
+            False
+        )
+        self.b, self.a = butter(N, Wn, 'band', True)
 
     def forward(self, x, mean):
         x = self.remove_dc_component(x, mean)            # TODO: Fix function
@@ -48,8 +47,7 @@ class EEGDataProcessor:
 
     def filter(self, buffer):
         for c in range(buffer.shape[0]):
-            buffer[c] = lfilter(self.low_b, self.low_a, buffer[c])
-            buffer[c] = lfilter(self.high_b, self.high_a, buffer[c])
+            buffer[c] = filtfilt(self.b, self.a, buffer[c])
         return buffer
 
     def correct_offset(self, buffer):
