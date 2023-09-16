@@ -20,6 +20,8 @@ class ModelWrapper(pl.LightningModule):
     def __init__(self, n_classes):
         super().__init__()
 
+        self.to(torch.float)
+
         self.n_classes = n_classes
 
         self.accuracy_train = torchmetrics.Precision(task="multiclass", average='macro', num_classes=n_classes)
