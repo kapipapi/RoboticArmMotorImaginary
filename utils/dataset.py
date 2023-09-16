@@ -43,9 +43,6 @@ class EEGDataset(Dataset):
         label = data["impulse_index"] - 1
         sample_rate = int(data["sample_rate"])
 
-        # if label >= self.n_classes:
-        #     return
-
         # shorten slice to even timing (4 second sample)
         end = sample_rate * 4
 
