@@ -138,7 +138,7 @@ class ViT(nn.Sequential):
         super().__init__(
             ResidualAdd(
                 nn.Sequential(
-                    nn.LayerNorm(512),
+                    nn.LayerNorm(1024),
                     channel_attention(),
                     nn.Dropout(0.5),
                 )
@@ -151,7 +151,7 @@ class ViT(nn.Sequential):
 
 
 class channel_attention(pl.LightningModule):
-    def __init__(self, sequence_num=512, inter=30):
+    def __init__(self, sequence_num=1024, inter=30):
         super(channel_attention, self).__init__()
         self.sequence_num = sequence_num
         self.inter = inter

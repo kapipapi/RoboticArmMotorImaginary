@@ -20,8 +20,6 @@ class ModelWrapper(pl.LightningModule):
     def __init__(self, n_classes):
         super().__init__()
 
-        self.to(torch.float)
-
         self.n_classes = n_classes
 
         self.accuracy_train = torchmetrics.Precision(task="multiclass", average='macro', num_classes=n_classes)
@@ -56,15 +54,15 @@ class ModelWrapper(pl.LightningModule):
 
         # calculate loss
         loss = cross_entropy(label.to(torch.float32), output)
-        self.log("train_loss", loss, on_step=False, on_epoch=True)
+        self.log("train_loss", loss, on_step=True)
 
         # calculate accuracy
         self.accuracy_train.update(output, label_n)
-        self.log('train_acc', self.accuracy_train, on_step=False, on_epoch=True)
+        self.log('train_acc', self.accuracy_train, on_epoch=True)
 
         # calculate f1 score
         self.f1_train.update(output, label_n)
-        self.log('train_f1', self.f1_train, on_step=False, on_epoch=True)
+        self.log('train_f1', self.f1_train, on_epoch=True)
 
         return loss
 
@@ -82,15 +80,15 @@ class ModelWrapper(pl.LightningModule):
 
         # calculate loss
         loss = cross_entropy(label.to(torch.float32), output)
-        self.log("validation_loss", loss, on_step=False, on_epoch=True)
+        self.log("validation_loss", loss)
 
         # calculate accuracy
         self.accuracy_val.update(output, label_n)
-        self.log('validation_acc', self.accuracy_val, on_step=False, on_epoch=True)
+        self.log('validation_acc', self.accuracy_val, on_epoch=True)
 
         # calculate f1 score
         self.f1_val.update(output, label_n)
-        self.log('validation_f1', self.f1_val, on_step=False, on_epoch=True)
+        self.log('validation_f1', self.f1_val, on_epoch=True)
 
     def test_step(self, batch, batch_idx):
         data, label_n = batch
@@ -106,15 +104,15 @@ class ModelWrapper(pl.LightningModule):
 
         # calculate loss
         loss = cross_entropy(label.to(torch.float32), output)
-        self.log("test_loss", loss, on_step=False, on_epoch=True)
+        self.log("test_loss", loss)
 
         # calculate accuracy
         self.accuracy_test.update(output, label_n)
-        self.log('test_acc', self.accuracy_test, on_step=False, on_epoch=True)
+        self.log('test_acc', self.accuracy_test)
 
         # calculate f1 score
         self.f1_test.update(output, label_n)
-        self.log('test_f1', self.f1_test, on_step=False, on_epoch=True)
+        self.log('test_f1', self.f1_test)
 
         self.confmat.update(output, label_n)
 
