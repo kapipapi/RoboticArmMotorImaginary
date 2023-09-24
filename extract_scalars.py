@@ -96,11 +96,11 @@ def main():
     'validation_f1',
     
     'train_loss',
-    'train_acc',
-    'train_f1',
+    'train_acc_epoch',
+    'train_f1_epoch',
   ])
 
-  logdir = 'tb_logs'
+  logdir = 'logs_all/tb_logs_24_09_kapi'
   output_dir = 'csv_output'
   mkdir_p(output_dir)
 
